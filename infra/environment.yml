@@ -1,0 +1,72 @@
+Parameters:
+  VPCCIDR:
+    Type: String
+    Description: CIDR block used to create the VPC (e.g. 10.0.0.0/24)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 10.0.0.0/24)
+  PublicSubnet1CIDR:
+    Type: String
+    Description: CIDR block should used to create the public subnet in AZ1 (e.g. 10.0.0.0/26)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 10.0.0.0/26)
+  PublicSubnet2CIDR:
+    Type: String
+    Description: CIDR block should used to create the public subnet in AZ2 (e.g. 10.0.0.64/26)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 10.0.0.64/26)
+  PrivateSubnet1CIDR:
+    Type: String
+    Description: CIDR block should used to create the private subnet in AZ1 (e.g. 10.0.0.128/26)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 10.0.0.128/26)
+  PrivateSubnet2CIDR:
+    Type: String
+    Description: CIDR block should used to create the private subnet in AZ2 (e.g. 10.0.0.192/26)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 10.0.0.192/26)
+  Environment:
+    Type: String
+    Description: "Environment: staging, production, etc."
+  AmiId:
+    Type: AWS::EC2::Image::Id
+    Description: Ami Id
+  BastionHostKeyName:
+    Type: String
+    Description: Bastion Host Key Name
+Resources:
+  Network:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'network/network.yml'
+      Parameters:
+        VPCCIDR:
+          Ref: VPCCIDR
+        PublicSubnet1CIDR:
+          Ref: PublicSubnet1CIDR
+        PublicSubnet2CIDR:
+          Ref: PublicSubnet2CIDR
+        PrivateSubnet1CIDR:
+          Ref: PrivateSubnet1CIDR
+        PrivateSubnet2CIDR:
+          Ref: PrivateSubnet2CIDR
+        Environment:
+          Ref: Environment
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}/Network'
+  BastionHost:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'bastion-host/bastion-host.yml'
+      Parameters:
+        VpcId: !GetAtt Network.Outputs.VPC
+        SubnetId: !GetAtt Network.Outputs.PublicSubnet1
+        Environment:
+          Ref: Environment
+        AmiId:
+          Ref: AmiId
+        BastionHostKeyName:
+          Ref: BastionHostKeyName
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::/BastionHost'

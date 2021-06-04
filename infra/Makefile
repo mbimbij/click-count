@@ -33,6 +33,7 @@ staging-environment: s3-bucket ssh-key-pair
 	jq ". + [{\"ParameterKey\": \"AmiId\", \"ParameterValue\": \"$(BASE_AMI_ID)\"}]" staging.json > staging-processed.json
 	aws cloudformation deploy --stack-name $(STAGING_ENVIRONMENT_STACK_NAME) --template-file environment-packaged.yml --parameter-overrides file://staging-processed.json
 	rm staging-processed.json
+	rm environment-packaged.yml
 
 delete-s3-bucket:
 	./stack-deletion/delete-stack-wait-termination.sh $(S3_BUCKET_STACK_NAME)

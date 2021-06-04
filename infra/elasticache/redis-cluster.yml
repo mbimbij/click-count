@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: S3 Bucket used for CloudFormation nested stack and pipeline resources
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Vpc Id
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnet Ids
+  ApplicationSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Application Security Group
+  CacheNodeType:
+    Default: cache.t2.micro
+    Type: String
+    Description: Cache Node Type
+  NumCacheNodes:
+    Default: 1
+    Type: Number
+    Description: Num Cache Nodes
+  RedisPort:
+    Default: 6379
+    Type: Number
+    Description: Num Cache Nodes
+Resources:
+  ElasticacheSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Elasticache Security Group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref RedisPort
+          ToPort: !Ref RedisPort
+          SourceSecurityGroupId: !Ref ApplicationSecurityGroupId
+  ElasticacheSubnetGroup:
+    Type: 'AWS::ElastiCache::SubnetGroup'
+    Properties:
+      Description: Cache Subnet Group
+      SubnetIds: !Ref SubnetIds
+  ElasticacheCluster:
+    Type: 'AWS::ElastiCache::CacheCluster'
+    Properties:
+      Engine: redis
+      CacheNodeType: !Ref CacheNodeType
+      NumCacheNodes: !Ref NumCacheNodes
+      VpcSecurityGroupIds:
+        - !GetAtt [ElasticacheSecurityGroup, GroupId]
+      CacheSubnetGroupName: !Ref ElasticacheSubnetGroup

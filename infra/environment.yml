@@ -70,3 +70,17 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::/BastionHost'
+  Elasticache:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'elasticache/redis-cluster.yml'
+      Parameters:
+        VpcId: !GetAtt Network.Outputs.VPC
+        SubnetIds: !Join
+          - ','
+          - - !GetAtt Network.Outputs.PrivateSubnet1
+            - !GetAtt Network.Outputs.PrivateSubnet2
+        ApplicationSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::/Elasticache'

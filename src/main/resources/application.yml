@@ -1,4 +1,4 @@
 redis:
-  host: localhost
+  host: fghjklm.tl7ddh.ng.0001.euw3.cache.amazonaws.com
   port: 6379
-  connection-timeout: 2000
+  connection-timeout: 10000

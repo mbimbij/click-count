@@ -229,3 +229,17 @@ Outputs:
     Value: !Ref PrivateSubnet2
     Export:
       Name: !Sub '${AWS::StackName}::PrivateSubnet2'
+  PublicSubnets:
+    Value: !Join
+      - ','
+      - - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+    Export:
+      Name: !Sub '${AWS::StackName}::PublicSubnets'
+  PrivateSubnets:
+    Value: !Join
+      - ','
+      - - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+    Export:
+      Name: !Sub '${AWS::StackName}::PrivateSubnets'

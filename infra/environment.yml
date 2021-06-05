@@ -76,10 +76,7 @@ Resources:
       TemplateURL: 'elasticache/redis-cluster.yml'
       Parameters:
         VpcId: !GetAtt Network.Outputs.VPC
-        SubnetIds: !Join
-          - ','
-          - - !GetAtt Network.Outputs.PrivateSubnet1
-            - !GetAtt Network.Outputs.PrivateSubnet2
+        SubnetIds: !GetAtt Network.Outputs.PrivateSubnets
         ApplicationSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
       Tags:
         - Key: Name

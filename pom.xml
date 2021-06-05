@@ -11,16 +11,16 @@
     </parent>
 
     <groupId>fr.xebia</groupId>
-    <artifactId>clickCount</artifactId>
+    <artifactId>click-count</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>clickCount</name>
+    <name>click-count</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.target>16</maven.compiler.target>
 
         <redisson.version>2.1.2</redisson.version>
         <testcontainers.version>1.15.3</testcontainers.version>
@@ -71,13 +71,16 @@
     </dependencies>
 
     <build>
-        <finalName>clickCount</finalName>
+        <finalName>click-count</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <layout>ZIP</layout>
+                    <image>
+                        <name>test</name>
+                    </image>
                 </configuration>
             </plugin>
         </plugins>

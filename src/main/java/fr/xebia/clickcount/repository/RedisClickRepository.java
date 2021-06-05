@@ -1,9 +1,9 @@
 package fr.xebia.clickcount.repository;
 
 import fr.xebia.clickcount.RedisConfiguration;
-import fr.xebia.clickcount.hexagon.ICheckDataStoreHealth;
-import fr.xebia.clickcount.hexagon.ICountClicks;
-import fr.xebia.clickcount.hexagon.IRegisterANewClick;
+import fr.xebia.clickcount.pseudohexagon.ICheckDataStoreHealth;
+import fr.xebia.clickcount.pseudohexagon.ICountClicks;
+import fr.xebia.clickcount.pseudohexagon.IRegisterANewClick;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;

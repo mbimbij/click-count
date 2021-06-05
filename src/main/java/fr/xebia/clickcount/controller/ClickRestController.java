@@ -1,8 +1,8 @@
 package fr.xebia.clickcount.controller;
 
-import fr.xebia.clickcount.hexagon.ICheckDataStoreHealth;
-import fr.xebia.clickcount.hexagon.ICountClicks;
-import fr.xebia.clickcount.hexagon.IRegisterANewClick;
+import fr.xebia.clickcount.pseudohexagon.ICheckDataStoreHealth;
+import fr.xebia.clickcount.pseudohexagon.ICountClicks;
+import fr.xebia.clickcount.pseudohexagon.IRegisterANewClick;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;

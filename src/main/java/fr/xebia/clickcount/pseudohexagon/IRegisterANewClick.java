@@ -1,4 +1,4 @@
-package fr.xebia.clickcount.hexagon;
+package fr.xebia.clickcount.pseudohexagon;
 
 @FunctionalInterface
 public interface IRegisterANewClick {

@@ -1,8 +1,8 @@
 package fr.xebia.clickcount;
 
-import fr.xebia.clickcount.hexagon.ICheckDataStoreHealth;
-import fr.xebia.clickcount.hexagon.ICountClicks;
-import fr.xebia.clickcount.hexagon.IRegisterANewClick;
+import fr.xebia.clickcount.pseudohexagon.ICheckDataStoreHealth;
+import fr.xebia.clickcount.pseudohexagon.ICountClicks;
+import fr.xebia.clickcount.pseudohexagon.IRegisterANewClick;
 import fr.xebia.clickcount.repository.RedisClickRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

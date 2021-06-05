@@ -45,5 +45,5 @@ Resources:
       CacheNodeType: !Ref CacheNodeType
       NumCacheNodes: !Ref NumCacheNodes
       VpcSecurityGroupIds:
-        - !GetAtt [ElasticacheSecurityGroup, GroupId]
+        - !GetAtt [ ElasticacheSecurityGroup, GroupId ]
       CacheSubnetGroupName: !Ref ElasticacheSubnetGroup

@@ -22,8 +22,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.File;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(
@@ -83,9 +81,9 @@ class SpringBootApplicationIT {
   }
 
   @Configuration
-  public static class TestSpringConfiguration{
+  public static class TestSpringConfiguration {
     @Bean
-    public IFlushRedis iFlushRedis(RedisConfiguration configuration){
+    public IFlushRedis iFlushRedis(RedisConfiguration configuration) {
       Config config = new Config();
       config.useSingleServer().setAddress(String.format("%s:%d", configuration.getHost(), configuration.getPort()));
       Redisson redisson = Redisson.create(config);

@@ -49,6 +49,6 @@ Resources:
           Value: !Ref Environment
 Outputs:
   PublicDnsName:
-    Value: !GetAtt [BastionHost, PublicDnsName]
+    Value: !GetAtt [ BastionHost, PublicDnsName ]
   SecurityGroupId:
-    Value: !GetAtt [BastionHostSecurityGroup, GroupId]
+    Value: !GetAtt [ BastionHostSecurityGroup, GroupId ]

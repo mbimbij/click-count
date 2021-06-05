@@ -2,7 +2,6 @@
 
 [![Build Status](https://travis-ci.org/xebia-france/click-count.svg)](https://travis-ci.org/xebia-france/click-count)
 
-
 # Notes
 
 1. Le build échoue initialement -> il faut ajouter une version plus récente du plugin maven `maven-war-plugin`

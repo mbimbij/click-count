@@ -1,0 +1,141 @@
+Parameters:
+  AmiId:
+    Type: AWS::EC2::Image::Id
+    Description: Ami Id
+  InstanceType:
+    Default: t2.micro
+    Type: String
+    Description: Ami Id
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID
+  Environment:
+    Type: String
+    Description: Environment
+  BastionHostSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Bastion Security Group Id
+  ApplicationPort:
+    Default: 8080
+    Type: Number
+    Description: ApplicationPort
+  LoadBalancingPort:
+    Default: 80
+    Type: Number
+    Description: ApplicationPort
+  ApplicationName:
+    Type: String
+    Description: ApplicationName
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Public Subnet Ids
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Private Subnet Ids
+Resources:
+  Ec2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: katacloud ec2 security group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: !Ref ApplicationPort
+          ToPort: !Ref ApplicationPort
+          CidrIp: 0.0.0.0/0
+  AlbSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Application ALB Security Group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionHostSecurityGroupId
+        - IpProtocol: tcp
+          FromPort: !Ref ApplicationPort
+          ToPort: !Ref ApplicationPort
+          SourceSecurityGroupId: !Ref BastionHostSecurityGroupId
+  MyLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: !Ref AmiId
+        InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Arn: !GetAtt [Ec2InstanceProfile, Arn]
+        SecurityGroups:
+          - !Ref Ec2SecurityGroup
+      LaunchTemplateName: !Sub '${ApplicationName}-${Environment}-ec2-launch-template'
+  Ec2InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Roles:
+        - Ref: Ec2InstanceRole
+  Ec2InstanceRole:
+    Type: AWS::IAM::Role
+    Description: IAM role for !Ref ApplicationName code deploy deployment group
+    Properties:
+      RoleName: !Sub '${ApplicationName}-${Environment}-ec2-instance-role'
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy
+  MyTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 10
+      HealthCheckTimeoutSeconds: 5
+      HealthCheckPath: /actuator/health
+      Name: !Sub '${ApplicationName}-${Environment}-target-group'
+      TargetType: instance
+      Protocol: HTTP
+      Port: !Ref ApplicationPort
+      VpcId: !Ref VpcId
+  MyAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AvailabilityZones:
+        Fn::GetAZs: !Ref AWS::Region
+      HealthCheckGracePeriod: 60
+      LaunchTemplate:
+        LaunchTemplateId: !Ref MyLaunchTemplate
+        Version: !GetAtt MyLaunchTemplate.LatestVersionNumber
+      MinSize: '2'
+      MaxSize: '4'
+      TargetGroupARNs:
+        - !Ref MyTargetGroup
+  MyLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: MyLoadBalancer
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+      Type: application
+      Subnets: !Ref PublicSubnetIds
+  MyLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: "forward"
+          ForwardConfig:
+            TargetGroups:
+              - TargetGroupArn: !Ref MyTargetGroup
+                Weight: 1
+      LoadBalancerArn: !Ref MyLoadBalancer
+      Port: !Ref LoadBalancingPort
+      Protocol: "HTTP"
+Outputs:
+  ApplicationSecurityGroupId:
+    Value: !GetAtt [ Ec2SecurityGroup, GroupId ]

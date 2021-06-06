@@ -26,5 +26,9 @@
   {
     "ParameterKey": "BastionHostKeyName",
     "ParameterValue": "local"
+  },
+  {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "t2.micro"
   }
 ]

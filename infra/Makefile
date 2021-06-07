@@ -40,6 +40,9 @@ staging-environment: ami s3-bucket ssh-key-pair
 production-environment: ami s3-bucket ssh-key-pair
 	cd environment && ./create-environment.sh $(APPLICATION_NAME) $(S3_BUCKET_NAME) $(BASE_AMI_ID) production $(PRODUCTION_ENVIRONMENT_STACK_NAME)
 pipeline:
+	$(eval STAGING_VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::network::VPC'].Value" --output text))
+	$(eval STAGING_PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::network::PrivateSubnets'].Value" --output text))
+	$(eval STAGING_ENVIRONMENT_DNS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::InstancePrivateDns'].Value" --output text))
 	aws cloudformation deploy    \
 	  --stack-name $(PIPELINE_STACK_NAME)   \
 	  --template-file pipeline/pipeline.yml    \
@@ -49,6 +52,9 @@ pipeline:
 		S3Bucket=$(S3_BUCKET_NAME) \
 		GithubRepo=$(GITHUB_REPO)   \
 		GithubRepoBranch=$(GITHUB_REPO_BRANCH) \
+		StagingVpcId=$(STAGING_VPC_ID) \
+        StagingPrivateSubnetIds=$(STAGING_PRIVATE_SUBNET_IDS) \
+        StagingEnvironmentDns=$(STAGING_ENVIRONMENT_DNS) \
 
 
 delete-all:

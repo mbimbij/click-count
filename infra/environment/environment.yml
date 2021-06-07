@@ -41,7 +41,7 @@ Parameters:
     Description: Instance Type
   ApplicationName:
     Type: String
-    Description: Bastion Host Key Name
+    Description: Application Name
 Resources:
   Network:
     Type: "AWS::CloudFormation::Stack"
@@ -58,6 +58,8 @@ Resources:
           Ref: PrivateSubnet1CIDR
         PrivateSubnet2CIDR:
           Ref: PrivateSubnet2CIDR
+        ApplicationName:
+          Ref: ApplicationName
         Environment:
           Ref: Environment
       Tags:

@@ -89,4 +89,4 @@ Outputs:
       - Ec2Instance
       - PrivateDnsName
     Export:
-      Name: !Sub '${AWS::StackName}::InstancePrivateDns'
+      Name: !Sub '${ApplicationName}::${Environment}::InstancePrivateDns'

@@ -22,6 +22,12 @@ Parameters:
     Default: 6379
     Type: Number
     Description: Num Cache Nodes
+  ApplicationName:
+    Type: String
+    Description: Application Name
+  Environment:
+    Type: String
+    Description: "Environment: staging, production, etc."
 Resources:
   ElasticacheSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -42,8 +48,16 @@ Resources:
     Type: 'AWS::ElastiCache::CacheCluster'
     Properties:
       Engine: redis
+      ClusterName: !Sub '${ApplicationName}-${Environment}-redis'
       CacheNodeType: !Ref CacheNodeType
       NumCacheNodes: !Ref NumCacheNodes
       VpcSecurityGroupIds:
         - !GetAtt [ ElasticacheSecurityGroup, GroupId ]
       CacheSubnetGroupName: !Ref ElasticacheSubnetGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-redis'
+        - Key: Application
+          Value: !Sub '${ApplicationName}'
+        - Key: Environment
+          Value: !Sub '${Environment}'

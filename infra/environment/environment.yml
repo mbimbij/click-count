@@ -89,6 +89,10 @@ Resources:
         VpcId: !GetAtt Network.Outputs.VPC
         SubnetIds: !GetAtt Network.Outputs.PrivateSubnets
         ApplicationSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
+        ApplicationName:
+          Ref: ApplicationName
+        Environment:
+          Ref: Environment
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::/Elasticache'

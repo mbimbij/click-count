@@ -24,7 +24,11 @@
     "ParameterValue": "staging"
   },
   {
-    "ParameterKey": "BastionHostKeyName",
+    "ParameterKey": "KeyName",
     "ParameterValue": "local"
+  },
+  {
+    "ParameterKey": "ApplicationInstanceType",
+    "ParameterValue": "t2.micro"
   }
 ]

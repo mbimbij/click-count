@@ -5,16 +5,16 @@ Parameters:
   InstanceType:
     Default: t2.micro
     Type: String
-    Description: Ami Id
+    Description: Instance Type
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: VPC ID
   SubnetId:
     Type: AWS::EC2::Subnet::Id
     Description: Subnet Id
-  BastionHostKeyName:
+  KeyName:
     Type: String
-    Description: Bastion Host Key Name
+    Description: SSH Key Pair Name
   Environment:
     Type: String
     Description: Environment
@@ -38,7 +38,7 @@ Resources:
     Properties:
       ImageId: !Ref AmiId
       InstanceType: !Ref InstanceType
-      KeyName: !Ref BastionHostKeyName
+      KeyName: !Ref KeyName
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
         - !Ref BastionHostSecurityGroup

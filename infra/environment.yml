@@ -27,10 +27,19 @@ Parameters:
   Environment:
     Type: String
     Description: "Environment: staging, production, etc."
-  AmiId:
+  BastionHostAmiId:
     Type: AWS::EC2::Image::Id
     Description: Ami Id
-  BastionHostKeyName:
+  KeyName:
+    Type: String
+    Description: Bastion Host Key Name
+  ApplicationAmiId:
+    Type: AWS::EC2::Image::Id
+    Description: Ami Id
+  ApplicationInstanceType:
+    Type: String
+    Description: Instance Type
+  ApplicationName:
     Type: String
     Description: Bastion Host Key Name
 Resources:
@@ -64,9 +73,9 @@ Resources:
         Environment:
           Ref: Environment
         AmiId:
-          Ref: AmiId
-        BastionHostKeyName:
-          Ref: BastionHostKeyName
+          Ref: BastionHostAmiId
+        KeyName:
+          Ref: KeyName
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::/BastionHost'
@@ -81,3 +90,24 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::/Elasticache'
+  Ec2Instance:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'ec2-instance/ec2-instance.yml'
+      Parameters:
+        VpcId: !GetAtt Network.Outputs.VPC
+        SubnetId: !GetAtt Network.Outputs.PrivateSubnet1
+        AllowedIngressSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
+        ApplicationName:
+          Ref: ApplicationName
+        KeyName:
+          Ref: KeyName
+        AmiId:
+          Ref: ApplicationAmiId
+        Environment:
+          Ref: Environment
+        InstanceType:
+          Ref: ApplicationInstanceType
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::/Ec2Instance'

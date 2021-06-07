@@ -26,17 +26,17 @@ all:
 s3-bucket:
 	aws cloudformation deploy    \
           --stack-name $(S3_BUCKET_STACK_NAME)   \
-          --template-file s3-bucket/s3-bucket.yml   \
+          --template-file environment/s3-bucket/s3-bucket.yml   \
           --parameter-overrides     \
             BucketName=$(S3_BUCKET_NAME)
 ssh-key-pair:
 	./ssh-key-pair/create-ssh-key-pair.sh $(SSH_KEY_NAME) $(SSH_KEY_PATH)
 ami:
-	cd ami && ./create-ami.sh $(APPLICATION_NAME) $(BASE_AMI_ID) $(AWS_REGION)
+	./create-ami.sh $(APPLICATION_NAME) $(BASE_AMI_ID) $(AWS_REGION)
 staging-environment: ami s3-bucket ssh-key-pair
-	./create-environment.sh $(APPLICATION_NAME) $(S3_BUCKET_NAME) $(BASE_AMI_ID) staging $(STAGING_ENVIRONMENT_STACK_NAME)
+	cd environment && ./create-environment.sh $(APPLICATION_NAME) $(S3_BUCKET_NAME) $(BASE_AMI_ID) staging $(STAGING_ENVIRONMENT_STACK_NAME)
 production-environment: ami s3-bucket ssh-key-pair
-	./create-environment.sh $(APPLICATION_NAME) $(S3_BUCKET_NAME) $(BASE_AMI_ID) production $(PRODUCTION_ENVIRONMENT_STACK_NAME)
+	cd environment && ./create-environment.sh $(APPLICATION_NAME) $(S3_BUCKET_NAME) $(BASE_AMI_ID) production $(PRODUCTION_ENVIRONMENT_STACK_NAME)
 
 
 delete-s3-bucket:

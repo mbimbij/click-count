@@ -14,6 +14,7 @@ $(eval BASE_AMI_ID := $(shell aws ssm get-parameters --names /aws/service/canoni
 S3_BUCKET_NAME=$(AWS_REGION)-$(AWS_ACCOUNT_ID)-$(APPLICATION_NAME)-bucket
 S3_BUCKET_STACK_NAME=$(S3_BUCKET_NAME)
 STAGING_ENVIRONMENT_STACK_NAME=$(APPLICATION_NAME)-staging-environment
+PRODUCTION_ENVIRONMENT_STACK_NAME=$(APPLICATION_NAME)-production-environment
 
 .PHONY: ami pipeline ssh-key-pair s3-bucket
 
@@ -33,12 +34,10 @@ ssh-key-pair:
 ami:
 	cd ami && ./create-ami.sh $(APPLICATION_NAME) $(BASE_AMI_ID) $(AWS_REGION)
 staging-environment: ami s3-bucket ssh-key-pair
-	$(eval APPLICATION_AMI_ID := $(shell aws ec2 describe-images --owners self --query "Images[?Name=='$(APPLICATION_NAME)'].ImageId" --output text))
-	aws cloudformation package --template-file environment.yml --output-template environment-packaged.yml --s3-bucket $(S3_BUCKET_NAME)
-	jq ". + [{\"ParameterKey\": \"BastionHostAmiId\", \"ParameterValue\": \"$(BASE_AMI_ID)\"},{\"ParameterKey\": \"ApplicationAmiId\", \"ParameterValue\": \"$(APPLICATION_AMI_ID)\"},{\"ParameterKey\": \"ApplicationName\", \"ParameterValue\": \"$(APPLICATION_NAME)\"}]" staging.json > staging-processed.json
-	aws cloudformation deploy --stack-name $(STAGING_ENVIRONMENT_STACK_NAME) --template-file environment-packaged.yml --parameter-overrides file://staging-processed.json --capabilities CAPABILITY_NAMED_IAM
-	rm staging-processed.json
-	rm environment-packaged.yml
+	./create-environment.sh $(APPLICATION_NAME) $(S3_BUCKET_NAME) $(BASE_AMI_ID) staging $(STAGING_ENVIRONMENT_STACK_NAME)
+production-environment: ami s3-bucket ssh-key-pair
+	./create-environment.sh $(APPLICATION_NAME) $(S3_BUCKET_NAME) $(BASE_AMI_ID) production $(PRODUCTION_ENVIRONMENT_STACK_NAME)
+
 
 delete-s3-bucket:
 	./stack-deletion/delete-stack-wait-termination.sh $(S3_BUCKET_STACK_NAME)
@@ -46,3 +45,5 @@ delete-ssh-key-pair:
 	aws ec2 delete-key-pair --key-name $(SSH_KEY_NAME)
 delete-staging-environment:
 	./stack-deletion/delete-stack-wait-termination.sh $(STAGING_ENVIRONMENT_STACK_NAME)
+delete-production-environment:
+	./stack-deletion/delete-stack-wait-termination.sh $(PRODUCTION_ENVIRONMENT_STACK_NAME)

@@ -75,7 +75,7 @@ class SpringBootApplicationIT {
     public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
       int redisPort = dockerComposeContainer.getServicePort("redis_1", REDIS_PORT);
       TestPropertyValues.of(
-          "redis.port=%d".formatted(redisPort)
+          String.format("redis.port=%d", redisPort)
       ).applyTo(configurableApplicationContext.getEnvironment());
     }
   }

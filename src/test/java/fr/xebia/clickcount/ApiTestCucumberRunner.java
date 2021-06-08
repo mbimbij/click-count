@@ -14,7 +14,7 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
         "pretty",
         "junit:target/cucumber-reports/apitest/cucumber-apitest-results.xml",
         "usage:target/cucumber-reports/apitest/cucumber-apitest-usage.json"},
-    glue = {"org.example"},
-    features = "src/test/resources/features/staging")
+    glue = {"fr.xebia.clickcount"},
+    features = "src/test/resources/features")
 public class ApiTestCucumberRunner {
 }

@@ -106,11 +106,11 @@ Resources:
                 java: corretto11
             build:
               commands:
-                - mvn test -Dtest=CucumberRunnerStaging
+                - mvn test -Dtest=ApiTestCucumberRunner
           reports:
             Report:
               files:
-                - 'target/cucumber-reports/staging/cucumber-staging-results.xml'
+                - 'target/cucumber-reports/apitest/cucumber-apitest-results.xml'
           cache:
             paths:
               - '/root/.m2/**/*'

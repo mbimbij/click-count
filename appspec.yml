@@ -5,12 +5,8 @@ files:
     destination: /etc/systemd/system
   - source: /application.jar
     destination: /opt/application
-  - source: /deployment/conf/application-template.yml
+  - source: /application-server.yml
     destination: /opt/application/conf
-  - source: /application-template.yml
-    destination: /opt/application/conf
-  - source: /application-template.yml
-    destination: /tmp
 hooks:
   ApplicationStop:
     - location: deployment/scripts/stop_server.sh

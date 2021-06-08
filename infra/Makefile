@@ -63,6 +63,10 @@ delete-all:
 	$(MAKE) delete-pipeline
 	$(MAKE) -j2 delete-staging-environment delete-production-environment
 	$(MAKE) -j3 delete-ssh-key-pair delete-s3-bucket delete-ami
+delete-all-except-ami-and-ssh-key-pair:
+	$(MAKE) delete-pipeline
+	$(MAKE) -j2 delete-staging-environment delete-production-environment
+	$(MAKE) delete-s3-bucket
 delete-ami:
 	$(eval AMI_ID := $(shell aws ec2 describe-images --owners self --query "Images[?Name=='$(APPLICATION_NAME)'].ImageId" --output text))
 	aws ec2 deregister-image --image-id $(AMI_ID)

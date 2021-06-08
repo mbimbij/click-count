@@ -100,6 +100,7 @@ Resources:
                 Resource:
                   - !GetAtt [BuildProject, Arn]
                   - !GetAtt StagingTest.Outputs.TestRunnerArn
+                  - !GetAtt CreateStagingRelease.Outputs.CreateReleaseArn
               - Effect: Allow
                 Action:
                   - codedeploy:*
@@ -151,7 +152,6 @@ Resources:
               commands:
                 # move the jar (by wildcard, agnostic to its name) to top level application.jar
                 - mv target/*.jar application.jar
-                - cp deployment/conf/application-template.yml application-template.yml
           cache:
             paths:
               - '/root/.m2/**/*'
@@ -161,7 +161,6 @@ Resources:
               - appspec.yml
               - 'deployment/**/*'
               - application.service
-              - application-template.yml
   CodeDeployRole:
     Type: 'AWS::IAM::Role'
     Description: IAM role for !Ref ApplicationName code deploy deployment group
@@ -219,6 +218,18 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::StagingTestRunner'
+  CreateStagingRelease:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'create-release/create-release.yml'
+      Parameters:
+        ApplicationName: !Sub '${ApplicationName}-staging'
+        Environment: staging
+        S3Bucket:
+          Ref: S3Bucket
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::CreateStagingRelease'
   Pipeline:
     Description: Creating a deployment pipeline for !Ref ApplicationName project in AWS CodePipeline
     Type: 'AWS::CodePipeline::Pipeline'
@@ -262,10 +273,23 @@ Resources:
                   Ref: BuildProject
         - Name: Staging
           Actions:
-            - Name: Deploy
+            - Name: "CreateRelease"
               RunOrder: 1
               InputArtifacts:
                 - Name: BuildOutput
+              OutputArtifacts:
+                - Name: ReleaseOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !GetAtt CreateStagingRelease.Outputs.CreateReleaseName
+            - Name: Deploy
+              RunOrder: 2
+              InputArtifacts:
+                - Name: ReleaseOutput
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -277,7 +301,7 @@ Resources:
                 DeploymentGroupName:
                   Ref: StagingDeploymentGroup
             - Name: Test
-              RunOrder: 2
+              RunOrder: 3
               InputArtifacts:
                 - Name: SourceOutput
               ActionTypeId:

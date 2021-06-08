@@ -129,6 +129,10 @@ Resources:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
       Cache:
         Type: S3
         Location: !Sub '${S3Bucket}/maven-cache'
@@ -147,6 +151,7 @@ Resources:
               commands:
                 # move the jar (by wildcard, agnostic to its name) to top level application.jar
                 - mv target/*.jar application.jar
+                - cp deployment/conf/application-template.yml application-template.yml
           cache:
             paths:
               - '/root/.m2/**/*'
@@ -154,8 +159,9 @@ Resources:
             files:
               - application.jar
               - appspec.yml
-              - 'scripts/*'
+              - 'deployment/**/*'
               - application.service
+              - application-template.yml
   CodeDeployRole:
     Type: 'AWS::IAM::Role'
     Description: IAM role for !Ref ApplicationName code deploy deployment group

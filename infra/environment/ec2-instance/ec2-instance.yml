@@ -80,6 +80,15 @@ Resources:
         - '-'
         - - !Ref ApplicationName
           - !Sub '${Environment}-ec2-instance-role'
+      Policies:
+        - PolicyName: !Sub '${ApplicationName}-build-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeTags
+                Resource:
+                  - '*'
       AssumeRolePolicyDocument:
         Statement:
           - Action: "sts:AssumeRole"

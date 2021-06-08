@@ -5,7 +5,7 @@ sleep 30
 sudo apt update
 
 # installing some utilities
-sudo apt install -y tree ncdu mlocate tmux jq
+sudo apt install -y tree ncdu mlocate tmux jq awscli
 
 # installing java
 sudo apt install openjdk-16-jdk -y
@@ -16,6 +16,7 @@ if [[ -z $AWS_REGION ]]; then
   AWS_REGION="us-east-1"
 fi
 echo "region is: $AWS_REGION"
+export AWS_REGION
 
 # installing codedeploy agent
 sudo apt-get install ruby wget -y
@@ -24,3 +25,6 @@ chmod +x ./install
 sudo ./install auto | tee /tmp/logfile
 sudo systemctl start codedeploy-agent
 sudo systemctl enable codedeploy-agent
+
+# setting aws cli region
+aws configure set region $AWS_REGION

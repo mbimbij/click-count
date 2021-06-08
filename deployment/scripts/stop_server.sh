@@ -1,2 +1,2 @@
 #! /bin/bash
-systemctl stop application
+systemctl stop application || echo 0

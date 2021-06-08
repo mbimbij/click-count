@@ -106,3 +106,5 @@ Outputs:
       - PrivateDnsName
     Export:
       Name: !Sub '${ApplicationName}::${Environment}::InstancePrivateDns'
+  SecurityGroupId:
+    Value: !GetAtt [ Ec2SecurityGroup, GroupId ]

@@ -88,7 +88,7 @@ Resources:
       Parameters:
         VpcId: !GetAtt Network.Outputs.VPC
         SubnetIds: !GetAtt Network.Outputs.PrivateSubnets
-        ApplicationSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
+        ApplicationSecurityGroupId: !GetAtt Ec2Instance.Outputs.SecurityGroupId
         ApplicationName:
           Ref: ApplicationName
         Environment:

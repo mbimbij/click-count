@@ -44,6 +44,7 @@ pipeline:
 	$(eval STAGING_VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::network::VPC'].Value" --output text))
 	$(eval STAGING_PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::network::PrivateSubnets'].Value" --output text))
 	$(eval STAGING_ENVIRONMENT_DNS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::InstancePrivateDns'].Value" --output text))
+	$(eval TEST_RUNNER_SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::TestRunnerSecurityGroupId'].Value" --output text))
 	aws cloudformation deploy    \
 	  --stack-name $(PIPELINE_STACK_NAME)   \
 	  --template-file pipeline/pipeline-packaged.yml    \
@@ -55,7 +56,9 @@ pipeline:
 		GithubRepoBranch=$(GITHUB_REPO_BRANCH) \
 		StagingVpcId=$(STAGING_VPC_ID) \
         StagingPrivateSubnetIds=$(STAGING_PRIVATE_SUBNET_IDS) \
-        StagingEnvironmentDns=$(STAGING_ENVIRONMENT_DNS)
+        StagingEnvironmentDns=$(STAGING_ENVIRONMENT_DNS) \
+        TestRunnerSecurityGroupId=$(TEST_RUNNER_SECURITY_GROUP_ID)
+#        TestRunnerSecurityGroupId='sg-001765d4d50ff2df5'
 	rm pipeline/pipeline-packaged.yml
 
 

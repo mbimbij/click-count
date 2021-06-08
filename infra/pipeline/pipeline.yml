@@ -20,6 +20,9 @@ Parameters:
   S3Bucket:
     Type: String
     Description: S3 Bucket
+  TestRunnerSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Test Runner Security Group Id
 
 Resources:
   GithubConnection:
@@ -214,7 +217,7 @@ Resources:
           Ref: S3Bucket
         ApplicationEndpointDnsName:
           Ref: StagingEnvironmentDns
-        TestRunnerSecurityGroup: !ImportValue 'my-app::staging::TestRunnerSecurityGroup'
+        TestRunnerSecurityGroupId: !Ref TestRunnerSecurityGroupId
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::StagingTestRunner'

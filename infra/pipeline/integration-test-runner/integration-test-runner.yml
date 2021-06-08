@@ -17,7 +17,7 @@ Parameters:
   ApplicationEndpointDnsName:
     Type: String
     Description: ApplicationEndpointDnsName
-  TestRunnerSecurityGroup:
+  TestRunnerSecurityGroupId:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Test Runner Security Group Id
 Resources:
@@ -91,7 +91,7 @@ Resources:
         Location: !Sub '${S3Bucket}/maven-cache'
       VpcConfig:
         SecurityGroupIds:
-          - !Ref TestRunnerSecurityGroup
+          - !Ref TestRunnerSecurityGroupId
         Subnets: !Ref SubnetIds
         VpcId: !Ref VPCID
       Source:

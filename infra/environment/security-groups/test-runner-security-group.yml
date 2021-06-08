@@ -19,4 +19,4 @@ Outputs:
   SecurityGroupId:
     Value: !GetAtt [ TestRunnerSecurityGroup, GroupId ]
     Export:
-      Name: !Sub '${ApplicationName}::${Environment}::TestRunnerSecurityGroup'
+      Name: !Sub '${ApplicationName}::${Environment}::TestRunnerSecurityGroupId'

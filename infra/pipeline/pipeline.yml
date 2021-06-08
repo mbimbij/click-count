@@ -194,6 +194,24 @@ Resources:
               - Key: Environment
                 Value: staging
                 Type: KEY_AND_VALUE
+  StagingTest:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'integration-test-runner/integration-test-runner.yml'
+      Parameters:
+        ApplicationName:
+          Ref: ApplicationName
+        Environment: staging
+        VPCID:
+          Ref: StagingVpcId
+        SubnetIds: !Join [',', !Ref StagingPrivateSubnetIds]
+        S3Bucket:
+          Ref: S3Bucket
+        ApplicationEndpointDnsName:
+          Ref: StagingEnvironmentDns
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::StagingTestRunner'
   Pipeline:
     Description: Creating a deployment pipeline for !Ref ApplicationName project in AWS CodePipeline
     Type: 'AWS::CodePipeline::Pipeline'

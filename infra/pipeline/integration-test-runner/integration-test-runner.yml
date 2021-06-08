@@ -17,12 +17,15 @@ Parameters:
   ApplicationEndpointDnsName:
     Type: String
     Description: ApplicationEndpointDnsName
-Resources:
   TestRunnerSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: ec2 security group
-      VpcId: !Ref VPCID
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Test Runner Security Group Id
+Resources:
+#  TestRunnerSecurityGroup:
+#    Type: AWS::EC2::SecurityGroup
+#    Properties:
+#      GroupDescription: ec2 security group
+#      VpcId: !Ref VPCID
   TestRunnerRole:
     Type: 'AWS::IAM::Role'
     Description: IAM role for !Ref ApplicationName !Ref Environment test (using CodeBuild)

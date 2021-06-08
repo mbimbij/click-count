@@ -209,6 +209,7 @@ Resources:
           Ref: S3Bucket
         ApplicationEndpointDnsName:
           Ref: StagingEnvironmentDns
+        TestRunnerSecurityGroup: !ImportValue 'my-app::staging::TestRunnerSecurityGroup'
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::StagingTestRunner'

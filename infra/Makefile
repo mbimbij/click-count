@@ -44,7 +44,11 @@ pipeline:
 	$(eval STAGING_VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::network::VPC'].Value" --output text))
 	$(eval STAGING_PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::network::PrivateSubnets'].Value" --output text))
 	$(eval STAGING_ENVIRONMENT_DNS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::InstancePrivateDns'].Value" --output text))
-	$(eval TEST_RUNNER_SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::TestRunnerSecurityGroupId'].Value" --output text))
+	$(eval STAGING_TEST_RUNNER_SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::TestRunnerSecurityGroupId'].Value" --output text))
+	$(eval PRODUCTION_VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::production::network::VPC'].Value" --output text))
+	$(eval PRODUCTION_PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::production::network::PrivateSubnets'].Value" --output text))
+	$(eval PRODUCTION_ENVIRONMENT_DNS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::production::InstancePrivateDns'].Value" --output text))
+	$(eval PRODUCTION_TEST_RUNNER_SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::production::TestRunnerSecurityGroupId'].Value" --output text))
 	aws cloudformation deploy    \
 	  --stack-name $(PIPELINE_STACK_NAME)   \
 	  --template-file pipeline/pipeline-packaged.yml    \
@@ -57,7 +61,11 @@ pipeline:
 		StagingVpcId=$(STAGING_VPC_ID) \
         StagingPrivateSubnetIds=$(STAGING_PRIVATE_SUBNET_IDS) \
         StagingEnvironmentDns=$(STAGING_ENVIRONMENT_DNS) \
-        TestRunnerSecurityGroupId=$(TEST_RUNNER_SECURITY_GROUP_ID)
+        StagingTestRunnerSecurityGroupId=$(STAGING_TEST_RUNNER_SECURITY_GROUP_ID) \
+        ProductionVpcId=$(PRODUCTION_VPC_ID) \
+		ProductionPrivateSubnetIds=$(PRODUCTION_PRIVATE_SUBNET_IDS) \
+		ProductionEnvironmentDns=$(PRODUCTION_ENVIRONMENT_DNS) \
+        ProductionTestRunnerSecurityGroupId=$(PRODUCTION_TEST_RUNNER_SECURITY_GROUP_ID)
 #        TestRunnerSecurityGroupId='sg-001765d4d50ff2df5'
 	rm pipeline/pipeline-packaged.yml
 

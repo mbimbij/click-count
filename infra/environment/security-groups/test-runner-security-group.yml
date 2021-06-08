@@ -1,0 +1,22 @@
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Application Name
+  Environment:
+    Type: String
+    Description: Environment (staging, prod, ...)
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Vpc Id
+
+Resources:
+  TestRunnerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: test runner security group
+      VpcId: !Ref VpcId
+Outputs:
+  SecurityGroupId:
+    Value: !GetAtt [ TestRunnerSecurityGroup, GroupId ]
+    Export:
+      Name: !Sub '${ApplicationName}::${Environment}::TestRunnerSecurityGroup'

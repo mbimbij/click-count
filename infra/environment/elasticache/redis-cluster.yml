@@ -61,3 +61,17 @@ Resources:
           Value: !Sub '${ApplicationName}'
         - Key: Environment
           Value: !Sub '${Environment}'
+  ElasticacheAddress:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/${ApplicationName}/${Environment}/redis/address'
+      Type: String
+      Value: !GetAtt [ElasticacheCluster, RedisEndpoint.Address]
+      Description: Elasticache Address
+  ElasticachePort:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/${ApplicationName}/${Environment}/redis/port'
+      Type: String
+      Value: !GetAtt [ ElasticacheCluster, RedisEndpoint.Port ]
+      Description: Elasticache Port

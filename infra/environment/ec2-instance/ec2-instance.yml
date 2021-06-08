@@ -21,9 +21,12 @@ Parameters:
     Default: 8080
     Type: Number
     Description: Subnet Name
-  AllowedIngressSecurityGroupId:
+  BastionHostSecurityGroupId:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Bastion Host Security Group
+  TestRunnerSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Test Runner Security Group
   InstanceType:
     Type: String
     Description: Instance Type
@@ -38,11 +41,15 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          SourceSecurityGroupId: !Ref AllowedIngressSecurityGroupId
+          SourceSecurityGroupId: !Ref BastionHostSecurityGroupId
         - IpProtocol: tcp
           FromPort: !Ref ApplicationPort
           ToPort: !Ref ApplicationPort
-          SourceSecurityGroupId: !Ref AllowedIngressSecurityGroupId
+          SourceSecurityGroupId: !Ref BastionHostSecurityGroupId
+        - IpProtocol: tcp
+          FromPort: !Ref ApplicationPort
+          ToPort: !Ref ApplicationPort
+          SourceSecurityGroupId: !Ref TestRunnerSecurityGroupId
   Ec2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -73,6 +80,15 @@ Resources:
         - '-'
         - - !Ref ApplicationName
           - !Sub '${Environment}-ec2-instance-role'
+      Policies:
+        - PolicyName: !Sub '${ApplicationName}-build-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeTags
+                Resource:
+                  - '*'
       AssumeRolePolicyDocument:
         Statement:
           - Action: "sts:AssumeRole"
@@ -90,3 +106,5 @@ Outputs:
       - PrivateDnsName
     Export:
       Name: !Sub '${ApplicationName}::${Environment}::InstancePrivateDns'
+  SecurityGroupId:
+    Value: !GetAtt [ Ec2SecurityGroup, GroupId ]

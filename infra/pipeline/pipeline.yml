@@ -99,7 +99,8 @@ Resources:
                   - codebuild:StartBuildBatch
                 Resource:
                   - !GetAtt [BuildProject, Arn]
-#                  - !GetAtt StagingTest.Outputs.TestRunnerArn
+                  - !GetAtt StagingTest.Outputs.TestRunnerArn
+                  - !GetAtt CreateStagingRelease.Outputs.CreateReleaseArn
               - Effect: Allow
                 Action:
                   - codedeploy:*
@@ -129,6 +130,10 @@ Resources:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
       Cache:
         Type: S3
         Location: !Sub '${S3Bucket}/maven-cache'
@@ -154,7 +159,7 @@ Resources:
             files:
               - application.jar
               - appspec.yml
-              - 'scripts/*'
+              - 'deployment/**/*'
               - application.service
   CodeDeployRole:
     Type: 'AWS::IAM::Role'
@@ -194,6 +199,37 @@ Resources:
               - Key: Environment
                 Value: staging
                 Type: KEY_AND_VALUE
+  StagingTest:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'integration-test-runner/integration-test-runner.yml'
+      Parameters:
+        ApplicationName:
+          Ref: ApplicationName
+        Environment: staging
+        VPCID:
+          Ref: StagingVpcId
+        SubnetIds: !Join [',', !Ref StagingPrivateSubnetIds]
+        S3Bucket:
+          Ref: S3Bucket
+        ApplicationEndpointDnsName:
+          Ref: StagingEnvironmentDns
+        TestRunnerSecurityGroup: !ImportValue 'my-app::staging::TestRunnerSecurityGroup'
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::StagingTestRunner'
+  CreateStagingRelease:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'create-release/create-release.yml'
+      Parameters:
+        ApplicationName: !Sub '${ApplicationName}-staging'
+        Environment: staging
+        S3Bucket:
+          Ref: S3Bucket
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::CreateStagingRelease'
   Pipeline:
     Description: Creating a deployment pipeline for !Ref ApplicationName project in AWS CodePipeline
     Type: 'AWS::CodePipeline::Pipeline'
@@ -237,10 +273,23 @@ Resources:
                   Ref: BuildProject
         - Name: Staging
           Actions:
-            - Name: Deploy
+            - Name: "CreateRelease"
               RunOrder: 1
               InputArtifacts:
                 - Name: BuildOutput
+              OutputArtifacts:
+                - Name: ReleaseOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !GetAtt CreateStagingRelease.Outputs.CreateReleaseName
+            - Name: Deploy
+              RunOrder: 2
+              InputArtifacts:
+                - Name: ReleaseOutput
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -251,3 +300,14 @@ Resources:
                   Ref: CodeDeployApplication
                 DeploymentGroupName:
                   Ref: StagingDeploymentGroup
+            - Name: Test
+              RunOrder: 3
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !GetAtt StagingTest.Outputs.TestRunnerName

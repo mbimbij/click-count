@@ -34,18 +34,19 @@ s3-bucket:
 ssh-key-pair:
 	./ssh-key-pair/create-ssh-key-pair.sh $(SSH_KEY_NAME) $(SSH_KEY_PATH)
 ami:
-	./create-ami.sh $(APPLICATION_NAME) $(BASE_AMI_ID) $(AWS_REGION)
+	cd ami && ./create-ami.sh $(APPLICATION_NAME) $(BASE_AMI_ID) $(AWS_REGION)
 staging-environment: ami s3-bucket ssh-key-pair
 	cd environment && ./create-environment.sh $(APPLICATION_NAME) $(S3_BUCKET_NAME) $(BASE_AMI_ID) staging $(STAGING_ENVIRONMENT_STACK_NAME)
 production-environment: ami s3-bucket ssh-key-pair
 	cd environment && ./create-environment.sh $(APPLICATION_NAME) $(S3_BUCKET_NAME) $(BASE_AMI_ID) production $(PRODUCTION_ENVIRONMENT_STACK_NAME)
 pipeline:
+	aws cloudformation package --template-file pipeline/pipeline.yml --output-template pipeline/pipeline-packaged.yml --s3-bucket $(S3_BUCKET_NAME)
 	$(eval STAGING_VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::network::VPC'].Value" --output text))
 	$(eval STAGING_PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::network::PrivateSubnets'].Value" --output text))
 	$(eval STAGING_ENVIRONMENT_DNS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::InstancePrivateDns'].Value" --output text))
 	aws cloudformation deploy    \
 	  --stack-name $(PIPELINE_STACK_NAME)   \
-	  --template-file pipeline/pipeline.yml    \
+	  --template-file pipeline/pipeline-packaged.yml    \
 	  --capabilities CAPABILITY_NAMED_IAM   \
 	  --parameter-overrides     \
 		ApplicationName=$(APPLICATION_NAME)   \
@@ -54,13 +55,18 @@ pipeline:
 		GithubRepoBranch=$(GITHUB_REPO_BRANCH) \
 		StagingVpcId=$(STAGING_VPC_ID) \
         StagingPrivateSubnetIds=$(STAGING_PRIVATE_SUBNET_IDS) \
-        StagingEnvironmentDns=$(STAGING_ENVIRONMENT_DNS) \
+        StagingEnvironmentDns=$(STAGING_ENVIRONMENT_DNS)
+	rm pipeline/pipeline-packaged.yml
 
 
 delete-all:
 	$(MAKE) delete-pipeline
 	$(MAKE) -j2 delete-staging-environment delete-production-environment
 	$(MAKE) -j3 delete-ssh-key-pair delete-s3-bucket delete-ami
+delete-all-except-ami-and-ssh-key-pair:
+	$(MAKE) delete-pipeline
+	$(MAKE) -j2 delete-staging-environment delete-production-environment
+	$(MAKE) delete-s3-bucket
 delete-ami:
 	$(eval AMI_ID := $(shell aws ec2 describe-images --owners self --query "Images[?Name=='$(APPLICATION_NAME)'].ImageId" --output text))
 	aws ec2 deregister-image --image-id $(AMI_ID)

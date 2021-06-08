@@ -88,7 +88,7 @@ Resources:
       Parameters:
         VpcId: !GetAtt Network.Outputs.VPC
         SubnetIds: !GetAtt Network.Outputs.PrivateSubnets
-        ApplicationSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
+        ApplicationSecurityGroupId: !GetAtt Ec2Instance.Outputs.SecurityGroupId
         ApplicationName:
           Ref: ApplicationName
         Environment:
@@ -96,6 +96,19 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::/Elasticache'
+  TestRunnerSecurityGroup:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'security-groups/test-runner-security-group.yml'
+      Parameters:
+        ApplicationName:
+          Ref: ApplicationName
+        Environment:
+          Ref: Environment
+        VpcId: !GetAtt Network.Outputs.VPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::/TestRunnerSecurityGroup'
   Ec2Instance:
     Type: "AWS::CloudFormation::Stack"
     Properties:
@@ -103,7 +116,8 @@ Resources:
       Parameters:
         VpcId: !GetAtt Network.Outputs.VPC
         SubnetId: !GetAtt Network.Outputs.PrivateSubnet1
-        AllowedIngressSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
+        BastionHostSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
+        TestRunnerSecurityGroupId: !GetAtt TestRunnerSecurityGroup.Outputs.SecurityGroupId
         ApplicationName:
           Ref: ApplicationName
         KeyName:

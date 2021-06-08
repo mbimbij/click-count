@@ -1,0 +1,91 @@
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Application Name
+  Environment:
+    Type: String
+    Description: Environment
+  S3Bucket:
+    Type: String
+    Description: S3 Bucket
+Resources:
+  CreateReleaseRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref ApplicationName build resource
+    Properties:
+      RoleName: !Sub '${ApplicationName}-${Environment}-create-release-role'
+      Policies:
+        - PolicyName: !Sub '${ApplicationName}-${Environment}-create-release-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/my-app/${Environment}/*'
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+  CreateRelease:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ApplicationName}-release-project'
+      Description: A codebuild project to create application-server.yml config file for the !Ref ApplicationName springboot application
+      ServiceRole: !Ref CreateReleaseRole
+      Artifacts:
+        Type: CODEPIPELINE
+        Packaging: ZIP
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
+          - Name: ENVIRONMENT
+            Type: PLAINTEXT
+            Value: !Ref Environment
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            build:
+              commands:
+                - export REDIS_HOST=$(aws ssm get-parameter --name /my-app/$ENVIRONMENT/redis/address --query "Parameter.Value" --output text)
+                - export REDIS_PORT=$(aws ssm get-parameter --name /my-app/$ENVIRONMENT/redis/port --query "Parameter.Value" --output text)
+                - envsubst < deployment/conf/application-template.yml  > application-server.yml
+          artifacts:
+            files:
+              - application-server.yml
+              - application.jar
+              - appspec.yml
+              - 'deployment/**/*'
+              - application.service
+Outputs:
+  CreateReleaseName:
+    Description: Name of the CodeBuild resource
+    Value: !Ref CreateRelease
+  CreateReleaseArn:
+    Description: Name of the CodeBuild resource
+    Value: !GetAtt [CreateRelease, Arn]

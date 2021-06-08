@@ -48,7 +48,7 @@ Resources:
   CreateRelease:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub '${ApplicationName}-release-project'
+      Name: !Sub '${ApplicationName}-${Environment}-release-project'
       Description: A codebuild project to create application-server.yml config file for the !Ref ApplicationName springboot application
       ServiceRole: !Ref CreateReleaseRole
       Artifacts:

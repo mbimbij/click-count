@@ -99,7 +99,7 @@ Resources:
                   - codebuild:StartBuildBatch
                 Resource:
                   - !GetAtt [BuildProject, Arn]
-#                  - !GetAtt StagingTest.Outputs.TestRunnerArn
+                  - !GetAtt StagingTest.Outputs.TestRunnerArn
               - Effect: Allow
                 Action:
                   - codedeploy:*
@@ -269,3 +269,14 @@ Resources:
                   Ref: CodeDeployApplication
                 DeploymentGroupName:
                   Ref: StagingDeploymentGroup
+        - Name: Test
+          RunOrder: 2
+          InputArtifacts:
+            - Name: SourceOutput
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: 1
+            Provider: CodeBuild
+          Configuration:
+            ProjectName: !GetAtt StagingTest.Outputs.TestRunnerName

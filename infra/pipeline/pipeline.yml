@@ -202,6 +202,25 @@ Resources:
               - Key: Environment
                 Value: staging
                 Type: KEY_AND_VALUE
+  ProductionDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref CodeDeployApplication
+      ServiceRoleArn: !GetAtt
+        - CodeDeployRole
+        - Arn
+      DeploymentGroupName: !Sub '${ApplicationName}-staging-production-group'
+      DeploymentConfigName: CodeDeployDefault.OneAtATime
+      Ec2TagSet:
+        Ec2TagSetList:
+          - Ec2TagGroup:
+              - Key: Application
+                Value: !Ref ApplicationName
+                Type: KEY_AND_VALUE
+          - Ec2TagGroup:
+              - Key: Environment
+                Value: production
+                Type: KEY_AND_VALUE
   StagingTest:
     Type: "AWS::CloudFormation::Stack"
     Properties:
@@ -226,8 +245,20 @@ Resources:
     Properties:
       TemplateURL: 'create-release/create-release.yml'
       Parameters:
-        ApplicationName: !Sub '${ApplicationName}-staging'
+        ApplicationName: !Sub '${ApplicationName}'
         Environment: staging
+        S3Bucket:
+          Ref: S3Bucket
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::CreateStagingRelease'
+  CreateProductionRelease:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'create-release/create-release.yml'
+      Parameters:
+        ApplicationName: !Sub '${ApplicationName}'
+        Environment: production
         S3Bucket:
           Ref: S3Bucket
       Tags:
@@ -281,7 +312,7 @@ Resources:
               InputArtifacts:
                 - Name: BuildOutput
               OutputArtifacts:
-                - Name: ReleaseOutput
+                - Name: StagingRelease
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -292,7 +323,7 @@ Resources:
             - Name: Deploy
               RunOrder: 2
               InputArtifacts:
-                - Name: ReleaseOutput
+                - Name: StagingRelease
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -314,3 +345,18 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !GetAtt StagingTest.Outputs.TestRunnerName
+        - Name: Production
+          Actions:
+            - Name: "CreateRelease"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: BuildOutput
+              OutputArtifacts:
+                - Name: ProductionRelease
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !GetAtt CreateProductionRelease.Outputs.CreateReleaseName

@@ -8,7 +8,6 @@ $(error AWS_REGION is not set)
 endif
 
 include make-kubernetes.mk
-include make-bucket.mk
 
 SHELL := /bin/bash
 
@@ -72,6 +71,14 @@ pipeline:
 #        TestRunnerSecurityGroupId='sg-001765d4d50ff2df5'
 	rm pipeline/pipeline-packaged.yml
 
+s3-bucket:
+	aws cloudformation deploy    \
+          --stack-name $(S3_BUCKET_STACK_NAME)   \
+          --template-file s3-bucket/s3-bucket.yml   \
+          --parameter-overrides     \
+            BucketName=$(S3_BUCKET_NAME)
+delete-s3-bucket:
+	./stack-deletion/delete-stack-wait-termination.sh $(S3_BUCKET_STACK_NAME)
 
 delete-all:
 	$(MAKE) delete-pipeline

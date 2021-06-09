@@ -39,6 +39,9 @@ Resources:
           FromPort: !Ref RedisPort
           ToPort: !Ref RedisPort
           SourceSecurityGroupId: !Ref ApplicationSecurityGroupId
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}-${Environment}-redis'
   ElasticacheSubnetGroup:
     Type: 'AWS::ElastiCache::SubnetGroup'
     Properties:

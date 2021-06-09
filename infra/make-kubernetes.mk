@@ -4,6 +4,8 @@ endif
 
 KUBE_PIPELINE_STACK_NAME=$(APPLICATION_NAME)-kube-pipeline
 ELASTICACHE_STACK_BASE_NAME=$(APPLICATION_NAME)-elasticache
+KUBE_S3_BUCKET_NAME=$(AWS_REGION)-$(AWS_ACCOUNT_ID)-$(APPLICATION_NAME)-kube-bucket
+KUBE_S3_BUCKET_STACK_NAME=$(KUBE_S3_BUCKET_NAME)
 
 kube-cluster: requires-environment-set
 	envsubst < kubernetes/cluster/cluster-template.yml > kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
@@ -25,7 +27,7 @@ delete-kube-cluster: requires-environment-set
 elasticache: requires-environment-set
 	$(eval VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::VPC'].Value" --output text))
 	$(eval PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::SubnetsPrivate'].Value" --output text))
-	$(eval APPLICATION_SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::ClusterSecurityGroupId'].Value" --output text))
+	$(eval APPLICATION_SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::SharedNodeSecurityGroup'].Value" --output text))
 	aws cloudformation deploy    \
 		--stack-name $(ELASTICACHE_STACK_BASE_NAME)-$(ENVIRONMENT)   \
 		--template-file environment/elasticache/redis-cluster.yml    \
@@ -35,17 +37,37 @@ elasticache: requires-environment-set
 		VpcId=$(VPC_ID) \
 		SubnetIds=$(PRIVATE_SUBNET_IDS) \
 		ApplicationSecurityGroupId=$(APPLICATION_SECURITY_GROUP_ID)
+delete-elasticache: requires-environment-set
+	./stack-deletion/delete-stack-wait-termination.sh $(ELASTICACHE_STACK_BASE_NAME)-$(ENVIRONMENT)
 
-kube-pipeline: s3-bucket
+kube-pipeline: kube-s3-bucket
 	aws cloudformation deploy    \
 		--stack-name $(KUBE_PIPELINE_STACK_NAME)   \
 		--template-file kubernetes/pipeline/kubernetes-pipeline.yml    \
 		--capabilities CAPABILITY_NAMED_IAM   \
 		--parameter-overrides     \
 		ApplicationName=$(APPLICATION_NAME)   \
-		S3Bucket=$(S3_BUCKET_NAME) \
+		S3Bucket=$(KUBE_S3_BUCKET_NAME) \
 		GithubRepo=$(GITHUB_REPO)   \
 		GithubRepoBranch=$(GITHUB_REPO_BRANCH) \
 
 delete-kube-pipeline:
 	./stack-deletion/delete-stack-wait-termination.sh $(KUBE_PIPELINE_STACK_NAME)
+
+delete-kube-all:
+	- $(MAKE) delete-kube-pipeline
+	- $(MAKE) delete-elasticache ENVIRONMENT=staging
+	- $(MAKE) delete-kube-cluster ENVIRONMENT=staging
+	- $(MAKE) delete-elasticache ENVIRONMENT=production
+	- $(MAKE) delete-kube-cluster ENVIRONMENT=production
+	- $(MAKE) delete-kube-s3-bucket
+
+
+kube-s3-bucket:
+	aws cloudformation deploy    \
+          --stack-name $(KUBE_S3_BUCKET_STACK_NAME)   \
+          --template-file s3-bucket/s3-bucket.yml   \
+          --parameter-overrides     \
+            BucketName=$(KUBE_S3_BUCKET_NAME)
+delete-kube-s3-bucket:
+	./stack-deletion/delete-stack-wait-termination.sh $(KUBE_S3_BUCKET_STACK_NAME)

@@ -8,6 +8,7 @@ $(error AWS_REGION is not set)
 endif
 
 include make-kubernetes.mk
+include make-bucket.mk
 
 SHELL := /bin/bash
 

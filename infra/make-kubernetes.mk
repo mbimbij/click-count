@@ -14,6 +14,7 @@ kubernetes-environment:
 delete-kubernetes-environment:
 	eksctl delete cluster $(APPLICATION_NAME)-$(ENVIRONMENT)
 
+
 kubernetes-pipeline: s3-bucket
 	aws cloudformation deploy    \
 		--stack-name $(KUBE_PIPELINE_STACK_NAME)   \
@@ -21,7 +22,9 @@ kubernetes-pipeline: s3-bucket
 		--capabilities CAPABILITY_NAMED_IAM   \
 		--parameter-overrides     \
 		ApplicationName=$(APPLICATION_NAME)   \
-		S3Bucket=$(S3_BUCKET_NAME)
+		S3Bucket=$(S3_BUCKET_NAME) \
+		GithubRepo=$(GITHUB_REPO)   \
+		GithubRepoBranch=$(GITHUB_REPO_BRANCH) \
 
 delete-kubernetes-pipeline:
 	./stack-deletion/delete-stack-wait-termination.sh $(KUBE_PIPELINE_STACK_NAME)

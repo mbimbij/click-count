@@ -101,10 +101,8 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <imageName>${artifactId}</imageName>
                     <layout>ZIP</layout>
-                    <image>
-                        <name>test</name>
-                    </image>
                 </configuration>
                 <executions>
                     <execution>

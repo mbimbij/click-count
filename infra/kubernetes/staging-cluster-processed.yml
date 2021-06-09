@@ -1,0 +1,11 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: my-app-staging
+  region: eu-west-3
+
+nodeGroups:
+  - name: default-nodegroup
+    instanceType: t2.medium
+    desiredCapacity: 3

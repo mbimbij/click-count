@@ -2,6 +2,7 @@ ifndef APPLICATION_NAME
 $(error APPLICATION_NAME is not set)
 endif
 include infra.env
+include make-kubernetes.mk
 
 SHELL := /bin/bash
 
@@ -17,10 +18,12 @@ STAGING_ENVIRONMENT_STACK_NAME=$(APPLICATION_NAME)-staging-environment
 PRODUCTION_ENVIRONMENT_STACK_NAME=$(APPLICATION_NAME)-production-environment
 PIPELINE_STACK_NAME=$(APPLICATION_NAME)-pipeline
 
-.PHONY: ami pipeline ssh-key-pair s3-bucket
+.PHONY: toto ami pipeline ssh-key-pair s3-bucket
 
 .IGNORE: ami
 
+#toto:
+#	echo "coucou"
 all:
 	$(MAKE) -j3 ami s3-bucket ssh-key-pair
 	$(MAKE) -j2 staging-environment production-environment

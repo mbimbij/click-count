@@ -220,7 +220,6 @@ Resources:
           cache:
             paths:
               - '/root/.m2/**/*'
-              - '/var/lib/docker'
   KubeDeployStaging:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -267,7 +266,7 @@ Resources:
             build:
               commands:
                 - IMAGE_TAG=$(git rev-parse --short HEAD)
-                - IMAGE_URL=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/$APPLICATION_NAME-$APPLICATION_NAME
+                - IMAGE_URL=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/$APPLICATION_NAME
                 - helm upgrade -i --debug $APPLICATION_NAME ./deployment/helm-chart --set application.name=$APPLICATION_NAME --set redis.host=$REDIS_CLUSTER_HOST --set redis.port=$REDIS_CLUSTER_PORT --set imageUrl=$IMAGE_URL --set imageTag=$IMAGE_TAG
   Pipeline:
     Description: Creating a deployment pipeline for !Ref ApplicationName project in AWS CodePipeline

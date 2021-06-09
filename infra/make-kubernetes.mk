@@ -2,16 +2,14 @@ ifndef APPLICATION_NAME
 $(error APPLICATION_NAME is not set)
 endif
 
-include make-bucket.mk
-
 KUBE_PIPELINE_STACK_NAME=$(APPLICATION_NAME)-kube-pipeline
 
-kubernetes-environment:
-	@if [ -z $(ENVIRONMENT) ]; then exit 255; fi
+kubernetes-environment: requires-environment-set
+	echo "hello"
 	envsubst < kubernetes/cluster/cluster-template.yml > kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
-	eksctl create cluster -f  kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
+	#eksctl create cluster -f  kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
 
-delete-kubernetes-environment:
+delete-kubernetes-environment: requires-environment-set
 	eksctl delete cluster $(APPLICATION_NAME)-$(ENVIRONMENT)
 
 

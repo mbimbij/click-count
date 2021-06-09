@@ -28,13 +28,12 @@ PIPELINE_STACK_NAME=$(APPLICATION_NAME)-pipeline
 
 .IGNORE: ami
 
-#toto:
-#	echo "coucou"
 all:
 	$(MAKE) -j3 ami s3-bucket ssh-key-pair
 	$(MAKE) -j2 staging-environment production-environment
 	$(MAKE) pipeline
-
+requires-environment-set:
+	@if [ -z $(ENVIRONMENT) ]; then >&2 echo "ENVIRONMENT is not set"; exit 255; fi
 ssh-key-pair:
 	./ssh-key-pair/create-ssh-key-pair.sh $(SSH_KEY_NAME) $(SSH_KEY_PATH)
 ami:
@@ -85,8 +84,6 @@ delete-all-except-ami-and-ssh-key-pair:
 delete-ami:
 	$(eval AMI_ID := $(shell aws ec2 describe-images --owners self --query "Images[?Name=='$(APPLICATION_NAME)'].ImageId" --output text))
 	aws ec2 deregister-image --image-id $(AMI_ID)
-delete-s3-bucket:
-	./stack-deletion/delete-stack-wait-termination.sh $(S3_BUCKET_STACK_NAME)
 delete-ssh-key-pair:
 	aws ec2 delete-key-pair --key-name $(SSH_KEY_NAME)
 delete-staging-environment:

@@ -9,8 +9,8 @@ $(error AWS_REGION is not set)
 endif
 
 kubernetes-environment:
-	envsubst < kubernetes/cluster-template.yml > kubernetes/$(ENVIRONMENT)-cluster-processed.yml
-	eksctl create cluster -f  kubernetes/$(ENVIRONMENT)-cluster-processed.yml
+	envsubst < kubernetes/cluster/cluster-template.yml > kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
+	eksctl create cluster -f  kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
 
 delete-kubernetes-environment:
 	eksctl delete cluster $(APPLICATION_NAME)-$(ENVIRONMENT)

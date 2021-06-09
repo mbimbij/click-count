@@ -1,0 +1,366 @@
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Microservice Name
+  MicroserviceName:
+    Type: String
+    Description: Microservice Name
+  GithubRepo:
+    Type: String
+    Description: Github source code repository
+  GithubRepoBranch:
+    Default: 'main'
+    Type: String
+    Description: Github source code branch
+  KubernetesClusterName:
+    Type: String
+    Description: Kubernetes Cluster Name
+  KafkaClusterName:
+    Type: String
+    Description: Kafka Cluster Name
+
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Description: S3 bucket for pipeline artifacts
+    Properties:
+      BucketName: !Join
+        - '-'
+        - - !Ref 'AWS::Region'
+          - !Ref 'AWS::AccountId'
+          - !Ref MicroserviceName
+          - bucket-pipeline
+  GithubConnection:
+    Type: AWS::CodeStarConnections::Connection
+    Properties:
+      ConnectionName: !Ref MicroserviceName
+      ProviderType: GitHub
+  BuildProjectRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref MicroserviceName build resource
+    Properties:
+      RoleName: !Join
+        - '-'
+        - - !Ref MicroserviceName
+          - build-role
+      Path: /
+      Policies:
+        - PolicyName: !Join
+            - '-'
+            - - !Ref MicroserviceName
+              - build-policy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:GetAuthorizationToken
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: "*"
+              # For git full clone -> allow the use of git commands
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GithubConnection
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+  KubectlDeployRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref MicroserviceName kubectl deploy resource
+    Properties:
+      RoleName: !Join
+        - '-'
+        - - !Ref MicroserviceName
+          - kubectl-deploy-role
+      Path: /
+      Policies:
+        - PolicyName: !Join
+            - '-'
+            - - !Ref MicroserviceName
+              - kubectl-deploy-policy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:GetAuthorizationToken
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - eks:*
+                Resource: "*"
+              # For git full clone -> allow the use of git commands
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GithubConnection
+              - Effect: Allow
+                Action:
+                  - kafka:*
+                Resource: "*"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+  PipelineRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref MicroserviceName pipeline resource
+    Properties:
+      RoleName: !Join
+        - '-'
+        - - !Ref MicroserviceName
+          - pipeline-role
+      Path: /
+      Policies:
+        - PolicyName: !Join
+            - '-'
+            - - !Ref MicroserviceName
+              - pipeline-policy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GithubConnection
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuildBatches
+                  - codebuild:StartBuildBatch
+                Resource:
+                - !GetAtt
+                  - BuildProject
+                  - Arn
+                - !GetAtt
+                  - KubectlDeploy
+                  - Arn
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:PutObjectAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Join
+        - '-'
+        - - !Ref MicroserviceName
+          - build-project
+      Description: A build project for !Ref MicroserviceName
+      ServiceRole: !Ref BuildProjectRole
+      Artifacts:
+        Type: CODEPIPELINE
+        Packaging: ZIP
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_LARGE
+        Image: aws/codebuild/standard:4.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
+          - Name: MICROSERVICE_NAME
+            Type: PLAINTEXT
+            Value: !Ref MicroserviceName
+          - Name: AWS_DEFAULT_REGION
+            Type: PLAINTEXT
+            Value: !Ref "AWS::Region"
+          - Name: AWS_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: !Ref "AWS::AccountId"
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Logging in to Amazon ECR...
+                - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+                - export IMAGE_TAG=$(git rev-parse --short HEAD)
+                - echo "IMAGE_TAG=$IMAGE_TAG"
+            build:
+              commands:
+                - echo Build started on `date`
+                - echo Building the Docker image...
+                - echo "IMAGE_TAG= $IMAGE_TAG"
+                - docker build -t $MICROSERVICE_NAME:$IMAGE_TAG $MICROSERVICE_NAME
+                - docker tag $MICROSERVICE_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$APPLICATION_NAME-$MICROSERVICE_NAME:$IMAGE_TAG
+            post_build:
+              commands:
+                - echo Build completed on `date`
+                - echo Pushing the Docker image...
+                - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$APPLICATION_NAME-$MICROSERVICE_NAME:$IMAGE_TAG
+  KubectlDeploy:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Join
+        - '-'
+        - - !Ref MicroserviceName
+          - kubectl-deploy
+      Description: A build project for !Ref MicroserviceName
+      ServiceRole: !Ref KubectlDeployRole
+      Artifacts:
+        Type: CODEPIPELINE
+        Packaging: ZIP
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: AWS_REGION
+            Type: PLAINTEXT
+            Value: !Ref "AWS::Region"
+          - Name: AWS_ACCOUNTID
+            Type: PLAINTEXT
+            Value: !Ref 'AWS::AccountId'
+          - Name: CLUSTER_NAME
+            Type: PLAINTEXT
+            Value: !Ref KubernetesClusterName
+          - Name: KAFKA_CLUSTER_NAME
+            Type: PLAINTEXT
+            Value: !Ref KafkaClusterName
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
+          - Name: MICROSERVICE_NAME
+            Type: PLAINTEXT
+            Value: !Ref MicroserviceName
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+                - curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+                - helm version --short
+            build:
+              commands:
+                - IMAGE_TAG=$(git rev-parse --short HEAD)
+                - kafkaClusterArn=$(aws kafka list-clusters --query "ClusterInfoList[?ClusterName=='$KAFKA_CLUSTER_NAME'].ClusterArn" --output text)
+                - kafkaClusterBootstrapBrokers=$(aws kafka get-bootstrap-brokers --cluster-arn $kafkaClusterArn --query "BootstrapBrokerString" --output text | sed 's/,/\\,/g')
+                - IMAGE_URL=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/$APPLICATION_NAME-$MICROSERVICE_NAME
+                - helm upgrade -i --debug $MICROSERVICE_NAME ./$MICROSERVICE_NAME/helm-chart --set kafka.broker=$kafkaClusterBootstrapBrokers --set imageTag=$IMAGE_TAG --set imageUrl=$IMAGE_URL --set kafka.clientId=$MICROSERVICE_NAME --set kafka.groupId=$MICROSERVICE_NAME
+  Pipeline:
+    Description: Creating a deployment pipeline for !Ref MicroserviceName project in AWS CodePipeline
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      RoleArn: !GetAtt
+        - PipelineRole
+        - Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref S3Bucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeStarSourceConnection
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ConnectionArn: !Ref GithubConnection
+                FullRepositoryId: !Ref GithubRepo
+                BranchName: !Ref GithubRepoBranch
+                OutputArtifactFormat: "CODEBUILD_CLONE_REF"
+        - Name: Build
+          Actions:
+            - Name: Build
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:
+                  Ref: BuildProject
+        - Name: KubectlDeploy
+          Actions:
+            - Name: Deploy
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:
+                  Ref: KubectlDeploy
+  EcrRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub '${ApplicationName}-${MicroserviceName}'

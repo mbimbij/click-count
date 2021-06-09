@@ -13,6 +13,11 @@ kube-cluster: requires-environment-set
 		--value "$(APPLICATION_NAME)-$(ENVIRONMENT)" \
 		--type "String" \
 		--overwrite
+	eksctl create iamidentitymapping \
+      --cluster $(APPLICATION_NAME)-$(ENVIRONMENT) \
+      --arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-role \
+      --group system:masters \
+      --username $(APPLICATION_NAME)-kube-deploy-role
 
 delete-kube-cluster: requires-environment-set
 	eksctl delete cluster $(APPLICATION_NAME)-$(ENVIRONMENT)

@@ -3,15 +3,15 @@ kind: Service
 metadata:
   creationTimestamp: null
   labels:
-    run: node-app
-  name: node-app
+    run: {{ .Values.application.name }}
+  name: {{ .Values.application.name }}
 spec:
   ports:
     - port: {{ .Values.application.service.port }}
       protocol: TCP
       targetPort: {{ .Values.application.port }}
   selector:
-    app: node-app
+    app: {{ .Values.application.name }}
   type: LoadBalancer
 status:
   loadBalancer: {}

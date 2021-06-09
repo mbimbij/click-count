@@ -3,29 +3,29 @@ kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
-    app: node-app
-  name: node-app
+    app: {{ .Values.application.name }}
+  name: {{ .Values.application.name }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.application.replicas }}
   selector:
     matchLabels:
-      app: node-app
+      app: {{ .Values.application.name }}
   strategy: {}
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: node-app
+        app: {{ .Values.application.name }}
     spec:
       containers:
       - image: {{ .Values.imageUrl }}:{{ .Values.imageTag }}
-        name: node-app
+        name: {{ .Values.application.name }}
         ports:
         - containerPort: {{ .Values.application.port }}
         env:
         - name: SERVER_PORT
-          value: {{ .Values.application.port }}
+          value: {{ .Values.application.port | quote }}
         - name: REDIS_HOST
           value: {{ .Values.redis.host }}
         - name: REDIS_PORT
-          value: {{ .Values.redis.port }}
+          value: {{ .Values.redis.port | quote }}

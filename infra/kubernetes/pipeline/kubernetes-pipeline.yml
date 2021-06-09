@@ -11,9 +11,6 @@ Parameters:
   GithubRepoBranch:
     Type: String
     Description: Github source code branch
-  RedisClusterName:
-    Type: String
-    Description: Redis Cluster Name
 
 Resources:
   GithubConnection:
@@ -202,6 +199,7 @@ Resources:
           phases:
             pre_build:
               commands:
+                - docker images
                 - echo Logging in to Amazon ECR...
                 - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
                 - export IMAGE_TAG=$(git rev-parse --short HEAD)
@@ -222,6 +220,7 @@ Resources:
           cache:
             paths:
               - '/root/.m2/**/*'
+              - '/var/lib/docker'
   KubeDeployStaging:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -245,13 +244,16 @@ Resources:
             Value: !Ref 'AWS::AccountId'
           - Name: CLUSTER_NAME
             Type: PLAINTEXT
-            Value: !Ref KubernetesClusterName
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/staging/kubernetes/cluster-name}}'
           - Name: REDIS_CLUSTER_HOST
             Type: PLAINTEXT
             Value: !Sub '{{resolve:ssm:/${ApplicationName}/staging/redis/address}}'
-          - Name: APPLICATION_NAME
+          - Name: REDIS_CLUSTER_PORT
             Type: PLAINTEXT
             Value: !Sub '{{resolve:ssm:/${ApplicationName}/staging/redis/port}}'
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
       Source:
         Type: CODEPIPELINE
         BuildSpec: |
@@ -265,10 +267,8 @@ Resources:
             build:
               commands:
                 - IMAGE_TAG=$(git rev-parse --short HEAD)
-                - kafkaClusterArn=$(aws kafka list-clusters --query "ClusterInfoList[?ClusterName=='$REDIS_CLUSTER_HOST'].ClusterArn" --output text)
-                - kafkaClusterBootstrapBrokers=$(aws kafka get-bootstrap-brokers --cluster-arn $kafkaClusterArn --query "BootstrapBrokerString" --output text | sed 's/,/\\,/g')
                 - IMAGE_URL=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/$APPLICATION_NAME-$APPLICATION_NAME
-                - helm upgrade -i --debug $APPLICATION_NAME ./$APPLICATION_NAME/helm-chart --set kafka.broker=$kafkaClusterBootstrapBrokers --set imageTag=$IMAGE_TAG --set imageUrl=$IMAGE_URL --set kafka.clientId=$APPLICATION_NAME --set kafka.groupId=$APPLICATION_NAME
+                - helm upgrade -i --debug $APPLICATION_NAME ./deployment/helm-chart --set application.name=$APPLICATION_NAME --set redis.host=$REDIS_CLUSTER_HOST --set redis.port=$REDIS_CLUSTER_PORT --set imageUrl=$IMAGE_URL --set imageTag=$IMAGE_TAG
   Pipeline:
     Description: Creating a deployment pipeline for !Ref ApplicationName project in AWS CodePipeline
     Type: 'AWS::CodePipeline::Pipeline'

@@ -5,11 +5,16 @@ endif
 KUBE_PIPELINE_STACK_NAME=$(APPLICATION_NAME)-kube-pipeline
 ELASTICACHE_STACK_BASE_NAME=$(APPLICATION_NAME)-elasticache
 
-kubernetes-cluster: requires-environment-set
+kube-cluster: requires-environment-set
 	envsubst < kubernetes/cluster/cluster-template.yml > kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
-	eksctl create cluster -f  kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
+	- eksctl create cluster -f  kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
+	aws ssm put-parameter \
+		--name "/$(APPLICATION_NAME)/$(ENVIRONMENT)/kubernetes/cluster-name" \
+		--value "$(APPLICATION_NAME)-$(ENVIRONMENT)" \
+		--type "String" \
+		--overwrite
 
-delete-kubernetes-cluster: requires-environment-set
+delete-kube-cluster: requires-environment-set
 	eksctl delete cluster $(APPLICATION_NAME)-$(ENVIRONMENT)
 
 elasticache: requires-environment-set
@@ -26,7 +31,7 @@ elasticache: requires-environment-set
 		SubnetIds=$(PRIVATE_SUBNET_IDS) \
 		ApplicationSecurityGroupId=$(APPLICATION_SECURITY_GROUP_ID)
 
-kubernetes-pipeline: s3-bucket
+kube-pipeline: s3-bucket
 	aws cloudformation deploy    \
 		--stack-name $(KUBE_PIPELINE_STACK_NAME)   \
 		--template-file kubernetes/pipeline/kubernetes-pipeline.yml    \
@@ -37,5 +42,5 @@ kubernetes-pipeline: s3-bucket
 		GithubRepo=$(GITHUB_REPO)   \
 		GithubRepoBranch=$(GITHUB_REPO_BRANCH) \
 
-delete-kubernetes-pipeline:
+delete-kube-pipeline:
 	./stack-deletion/delete-stack-wait-termination.sh $(KUBE_PIPELINE_STACK_NAME)

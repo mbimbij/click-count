@@ -1,7 +1,12 @@
+include infra.env
+
 ifndef APPLICATION_NAME
 $(error APPLICATION_NAME is not set)
 endif
-include infra.env
+ifndef AWS_REGION
+$(error AWS_REGION is not set)
+endif
+
 include make-kubernetes.mk
 
 SHELL := /bin/bash
@@ -28,12 +33,7 @@ all:
 	$(MAKE) -j3 ami s3-bucket ssh-key-pair
 	$(MAKE) -j2 staging-environment production-environment
 	$(MAKE) pipeline
-s3-bucket:
-	aws cloudformation deploy    \
-          --stack-name $(S3_BUCKET_STACK_NAME)   \
-          --template-file environment/s3-bucket/s3-bucket.yml   \
-          --parameter-overrides     \
-            BucketName=$(S3_BUCKET_NAME)
+
 ssh-key-pair:
 	./ssh-key-pair/create-ssh-key-pair.sh $(SSH_KEY_NAME) $(SSH_KEY_PATH)
 ami:

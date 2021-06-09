@@ -11,6 +11,9 @@ Parameters:
   GithubRepoBranch:
     Type: String
     Description: Github source code branch
+  RedisClusterName:
+    Type: String
+    Description: Redis Cluster Name
 
 Resources:
   GithubConnection:
@@ -22,16 +25,10 @@ Resources:
     Type: 'AWS::IAM::Role'
     Description: IAM role for !Ref ApplicationName build resource
     Properties:
-      RoleName: !Join
-        - '-'
-        - - !Ref ApplicationName
-          - kube-build-role
+      RoleName: !Sub '${ApplicationName}-kube-build-role'
       Path: /
       Policies:
-        - PolicyName: !Join
-            - '-'
-            - - !Ref ApplicationName
-              - kube-build-policy
+        - PolicyName: !Sub '${ApplicationName}-kube-build-policy'
           PolicyDocument:
             Statement:
               - Effect: Allow
@@ -71,81 +68,69 @@ Resources:
             Principal:
               Service:
                 - codebuild.amazonaws.com
-#  KubectlDeployRole:
-#    Type: 'AWS::IAM::Role'
-#    Description: IAM role for !Ref ApplicationName kubectl deploy resource
-#    Properties:
-#      RoleName: !Join
-#        - '-'
-#        - - !Ref ApplicationName
-#          - kubectl-deploy-role
-#      Path: /
-#      Policies:
-#        - PolicyName: !Join
-#            - '-'
-#            - - !Ref ApplicationName
-#              - kubectl-deploy-policy
-#          PolicyDocument:
-#            Statement:
-#              - Effect: Allow
-#                Action:
-#                  - s3:PutObject
-#                  - s3:GetObject
-#                  - s3:GetObjectVersion
-#                  - s3:GetBucketAcl
-#                  - s3:GetBucketLocation
-#                Resource:
-#                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
-#                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
-#              - Effect: Allow
-#                Action:
-#                  - logs:CreateLogGroup
-#                  - logs:CreateLogStream
-#                  - logs:PutLogEvents
-#                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
-#              - Effect: Allow
-#                Action:
-#                  - ecr:BatchCheckLayerAvailability
-#                  - ecr:CompleteLayerUpload
-#                  - ecr:GetAuthorizationToken
-#                  - ecr:InitiateLayerUpload
-#                  - ecr:PutImage
-#                  - ecr:UploadLayerPart
-#                Resource: "*"
-#              - Effect: Allow
-#                Action:
-#                  - eks:*
-#                Resource: "*"
-#              # For git full clone -> allow the use of git commands
-#              - Effect: Allow
-#                Action:
-#                  - codestar-connections:UseConnection
-#                Resource: !Ref GithubConnection
-#              - Effect: Allow
-#                Action:
-#                  - kafka:*
-#                Resource: "*"
-#      AssumeRolePolicyDocument:
-#        Statement:
-#          - Action: "sts:AssumeRole"
-#            Effect: Allow
-#            Principal:
-#              Service:
-#                - codebuild.amazonaws.com
+  KubeDeployRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref ApplicationName kube deploy resource
+    Properties:
+      RoleName: !Sub '${ApplicationName}-kube-deploy-role'
+      Path: /
+      Policies:
+        - PolicyName: !Sub '${ApplicationName}-kube-deploy-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:GetAuthorizationToken
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - eks:*
+                Resource: "*"
+              # For git full clone -> allow the use of git commands
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GithubConnection
+              - Effect: Allow
+                Action:
+                  - kafka:*
+                Resource: "*"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
   PipelineRole:
     Type: 'AWS::IAM::Role'
     Description: IAM role for !Ref ApplicationName pipeline resource
     Properties:
-      RoleName: !Join
-        - '-'
-        - - !Ref ApplicationName
-          - kube-pipeline-role
+      RoleName: !Sub '${ApplicationName}-kube-pipeline-role'
       Path: /
       Policies:
-        - PolicyName: !Join
-            - '-'
-            - - !Ref ApplicationName
-              - pipeline-policy
+        - PolicyName: !Sub '${ApplicationName}-kube-pipeline-policy'
           PolicyDocument:
             Statement:
               - Effect: Allow
@@ -162,9 +147,9 @@ Resources:
                 - !GetAtt
                   - BuildProject
                   - Arn
-#                - !GetAtt
-#                  - KubectlDeploy
-#                  - Arn
+                - !GetAtt
+                  - KubeDeployStaging
+                  - Arn
               - Effect: Allow
                 Action:
                   - s3:PutObject
@@ -237,56 +222,53 @@ Resources:
           cache:
             paths:
               - '/root/.m2/**/*'
-#  KubectlDeploy:
-#    Type: AWS::CodeBuild::Project
-#    Properties:
-#      Name: !Join
-#        - '-'
-#        - - !Ref ApplicationName
-#          - kubectl-deploy
-#      Description: A build project for !Ref ApplicationName
-#      ServiceRole: !Ref KubectlDeployRole
-#      Artifacts:
-#        Type: CODEPIPELINE
-#        Packaging: ZIP
-#      Environment:
-#        Type: LINUX_CONTAINER
-#        ComputeType: BUILD_GENERAL1_SMALL
-#        Image: aws/codebuild/standard:4.0
-#        PrivilegedMode: true
-#        EnvironmentVariables:
-#          - Name: AWS_REGION
-#            Type: PLAINTEXT
-#            Value: !Ref "AWS::Region"
-#          - Name: AWS_ACCOUNTID
-#            Type: PLAINTEXT
-#            Value: !Ref 'AWS::AccountId'
-#          - Name: CLUSTER_NAME
-#            Type: PLAINTEXT
-#            Value: !Ref KubernetesClusterName
-#          - Name: KAFKA_CLUSTER_NAME
-#            Type: PLAINTEXT
-#            Value: !Ref KafkaClusterName
-#          - Name: APPLICATION_NAME
-#            Type: PLAINTEXT
-#            Value: !Ref ApplicationName
-#      Source:
-#        Type: CODEPIPELINE
-#        BuildSpec: |
-#          version: 0.2
-#          phases:
-#            pre_build:
-#              commands:
-#                - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
-#                - curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-#                - helm version --short
-#            build:
-#              commands:
-#                - IMAGE_TAG=$(git rev-parse --short HEAD)
-#                - kafkaClusterArn=$(aws kafka list-clusters --query "ClusterInfoList[?ClusterName=='$KAFKA_CLUSTER_NAME'].ClusterArn" --output text)
-#                - kafkaClusterBootstrapBrokers=$(aws kafka get-bootstrap-brokers --cluster-arn $kafkaClusterArn --query "BootstrapBrokerString" --output text | sed 's/,/\\,/g')
-#                - IMAGE_URL=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/$APPLICATION_NAME-$APPLICATION_NAME
-#                - helm upgrade -i --debug $APPLICATION_NAME ./$APPLICATION_NAME/helm-chart --set kafka.broker=$kafkaClusterBootstrapBrokers --set imageTag=$IMAGE_TAG --set imageUrl=$IMAGE_URL --set kafka.clientId=$APPLICATION_NAME --set kafka.groupId=$APPLICATION_NAME
+  KubeDeployStaging:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ApplicationName}-kube-deploy'
+      Description: A build project for !Ref ApplicationName
+      ServiceRole: !Ref KubeDeployRole
+      Artifacts:
+        Type: CODEPIPELINE
+        Packaging: ZIP
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: AWS_REGION
+            Type: PLAINTEXT
+            Value: !Ref "AWS::Region"
+          - Name: AWS_ACCOUNTID
+            Type: PLAINTEXT
+            Value: !Ref 'AWS::AccountId'
+          - Name: CLUSTER_NAME
+            Type: PLAINTEXT
+            Value: !Ref KubernetesClusterName
+          - Name: REDIS_CLUSTER_HOST
+            Type: PLAINTEXT
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/staging/redis/address}}'
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/staging/redis/port}}'
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+                - curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+                - helm version --short
+            build:
+              commands:
+                - IMAGE_TAG=$(git rev-parse --short HEAD)
+                - kafkaClusterArn=$(aws kafka list-clusters --query "ClusterInfoList[?ClusterName=='$REDIS_CLUSTER_HOST'].ClusterArn" --output text)
+                - kafkaClusterBootstrapBrokers=$(aws kafka get-bootstrap-brokers --cluster-arn $kafkaClusterArn --query "BootstrapBrokerString" --output text | sed 's/,/\\,/g')
+                - IMAGE_URL=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/$APPLICATION_NAME-$APPLICATION_NAME
+                - helm upgrade -i --debug $APPLICATION_NAME ./$APPLICATION_NAME/helm-chart --set kafka.broker=$kafkaClusterBootstrapBrokers --set imageTag=$IMAGE_TAG --set imageUrl=$IMAGE_URL --set kafka.clientId=$APPLICATION_NAME --set kafka.groupId=$APPLICATION_NAME
   Pipeline:
     Description: Creating a deployment pipeline for !Ref ApplicationName project in AWS CodePipeline
     Type: 'AWS::CodePipeline::Pipeline'
@@ -329,19 +311,19 @@ Resources:
               Configuration:
                 ProjectName:
                   Ref: BuildProject
-#        - Name: KubectlDeploy
-#          Actions:
-#            - Name: Deploy
-#              InputArtifacts:
-#                - Name: SourceOutput
-#              ActionTypeId:
-#                Category: Build
-#                Owner: AWS
-#                Version: 1
-#                Provider: CodeBuild
-#              Configuration:
-#                ProjectName:
-#                  Ref: KubectlDeploy
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:
+                  Ref: KubeDeployStaging
   EcrRepository:
     Type: AWS::ECR::Repository
     Properties:

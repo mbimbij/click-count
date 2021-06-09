@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: node-app
+  name: node-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-app
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: node-app
+    spec:
+      containers:
+      - image: {{ .Values.imageUrl }}:{{ .Values.imageTag }}
+        name: node-app
+        ports:
+        - containerPort: {{ .Values.application.port }}
+        env:
+        - name: SERVER_PORT
+          value: {{ .Values.application.port }}
+        - name: REDIS_HOST
+          value: {{ .Values.redis.host }}
+        - name: REDIS_PORT
+          value: {{ .Values.redis.port }}

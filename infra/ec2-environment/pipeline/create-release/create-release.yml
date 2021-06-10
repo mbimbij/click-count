@@ -37,7 +37,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - ssm:GetParameter
-                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/my-app/${Environment}/*'
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplicationName}/${Environment}/*'
       AssumeRolePolicyDocument:
         Statement:
           - Action: "sts:AssumeRole"
@@ -59,12 +59,12 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
         EnvironmentVariables:
-          - Name: APPLICATION_NAME
+          - Name: REDIS_HOST
             Type: PLAINTEXT
-            Value: !Ref ApplicationName
-          - Name: ENVIRONMENT
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/${Environment}/redis/address}}'
+          - Name: REDIS_PORT
             Type: PLAINTEXT
-            Value: !Ref Environment
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/${Environment}/redis/port}}'
       Source:
         Type: CODEPIPELINE
         BuildSpec: |
@@ -72,8 +72,6 @@ Resources:
           phases:
             build:
               commands:
-                - export REDIS_HOST=$(aws ssm get-parameter --name /my-app/$ENVIRONMENT/redis/address --query "Parameter.Value" --output text)
-                - export REDIS_PORT=$(aws ssm get-parameter --name /my-app/$ENVIRONMENT/redis/port --query "Parameter.Value" --output text)
                 - envsubst < deployment/conf/application-template.yml  > application-server.yml
           artifacts:
             files:

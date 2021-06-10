@@ -101,11 +101,17 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <imageName>${artifactId}</imageName>
                     <layout>ZIP</layout>
-                    <image>
-                        <name>test</name>
-                    </image>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>build-docker-image</id>
+                        <goals>
+                            <goal>build-image</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

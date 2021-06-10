@@ -1,0 +1,458 @@
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Application Name
+  S3Bucket:
+    Type: String
+    Description: S3 Bucket
+  GithubRepo:
+    Type: String
+    Description: Github source code repository
+  GithubRepoBranch:
+    Type: String
+    Description: Github source code branch
+
+Resources:
+  GithubConnection:
+    Type: AWS::CodeStarConnections::Connection
+    Properties:
+      ConnectionName: !Ref ApplicationName
+      ProviderType: GitHub
+  BuildProjectRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref ApplicationName build resource
+    Properties:
+      RoleName: !Sub '${ApplicationName}-kube-build-role'
+      Path: /
+      Policies:
+        - PolicyName: !Sub '${ApplicationName}-kube-build-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:GetAuthorizationToken
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: "*"
+              # For git full clone -> allow the use of git commands
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GithubConnection
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+  KubeDeployStagingRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref ApplicationName kube deploy resource
+    Properties:
+      RoleName: !Sub '${ApplicationName}-kube-deploy-staging-role'
+      Path: /
+      Policies:
+        - PolicyName: !Sub '${ApplicationName}-kube-staging-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:GetAuthorizationToken
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - eks:*
+                Resource: "*"
+              # For git full clone -> allow the use of git commands
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GithubConnection
+              - Effect: Allow
+                Action:
+                  - kafka:*
+                Resource: "*"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+  KubeDeployProductionRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref ApplicationName kube deploy resource
+    Properties:
+      RoleName: !Sub '${ApplicationName}-kube-deploy-production-role'
+      Path: /
+      Policies:
+        - PolicyName: !Sub '${ApplicationName}-kube-deploy-production-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:GetAuthorizationToken
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - eks:*
+                Resource: "*"
+              # For git full clone -> allow the use of git commands
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GithubConnection
+              - Effect: Allow
+                Action:
+                  - kafka:*
+                Resource: "*"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+  PipelineRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref ApplicationName pipeline resource
+    Properties:
+      RoleName: !Sub '${ApplicationName}-kube-pipeline-role'
+      Path: /
+      Policies:
+        - PolicyName: !Sub '${ApplicationName}-kube-pipeline-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GithubConnection
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuildBatches
+                  - codebuild:StartBuildBatch
+                Resource:
+                - !GetAtt
+                  - BuildProject
+                  - Arn
+                - !GetAtt
+                  - KubeDeployStaging
+                  - Arn
+                - !GetAtt
+                  - KubeDeployProduction
+                  - Arn
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:PutObjectAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ApplicationName}-kube-build-project'
+      Description: A build project for !Ref ApplicationName
+      ServiceRole: !Ref BuildProjectRole
+      Artifacts:
+        Type: CODEPIPELINE
+        Packaging: ZIP
+      Cache:
+        Type: S3
+        Location: !Sub '${S3Bucket}/maven-cache'
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_LARGE
+        Image: aws/codebuild/standard:4.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
+          - Name: AWS_DEFAULT_REGION
+            Type: PLAINTEXT
+            Value: !Ref "AWS::Region"
+          - Name: AWS_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: !Ref "AWS::AccountId"
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - docker images
+                - echo Logging in to Amazon ECR...
+                - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+                - export IMAGE_TAG=$(git rev-parse --short HEAD)
+                - echo "IMAGE_TAG=$IMAGE_TAG"
+            build:
+              commands:
+                - echo Build started on `date`
+                - echo Building the Docker image...
+                - echo "IMAGE_TAG= $IMAGE_TAG"
+                - mvn clean package
+                - IMAGE_NAME=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.artifactId}' --non-recursive exec:exec)
+                - docker tag $IMAGE_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$APPLICATION_NAME:$IMAGE_TAG
+            post_build:
+              commands:
+                - echo Build completed on `date`
+                - echo Pushing the Docker image...
+                - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$APPLICATION_NAME:$IMAGE_TAG
+          cache:
+            paths:
+              - '/root/.m2/**/*'
+  KubeDeployStaging:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ApplicationName}-kube-deploy-staging'
+      Description: A build project for !Ref ApplicationName for the staging environment
+      ServiceRole: !Ref KubeDeployStagingRole
+      Artifacts:
+        Type: CODEPIPELINE
+        Packaging: ZIP
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: AWS_REGION
+            Type: PLAINTEXT
+            Value: !Ref "AWS::Region"
+          - Name: AWS_ACCOUNTID
+            Type: PLAINTEXT
+            Value: !Ref 'AWS::AccountId'
+          - Name: CLUSTER_NAME
+            Type: PLAINTEXT
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/staging/kubernetes/cluster-name}}'
+          - Name: REDIS_CLUSTER_HOST
+            Type: PLAINTEXT
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/staging/redis/address}}'
+          - Name: REDIS_CLUSTER_PORT
+            Type: PLAINTEXT
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/staging/redis/port}}'
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+                - curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+                - helm version --short
+            build:
+              commands:
+                - IMAGE_TAG=$(git rev-parse --short HEAD)
+                - IMAGE_URL=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/$APPLICATION_NAME
+                - helm upgrade -i --debug $APPLICATION_NAME ./deployment/helm-chart --set application.name=$APPLICATION_NAME --set redis.host=$REDIS_CLUSTER_HOST --set redis.port=$REDIS_CLUSTER_PORT --set imageUrl=$IMAGE_URL --set imageTag=$IMAGE_TAG
+  KubeDeployProduction:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ApplicationName}-kube-deploy-production'
+      Description: A build project for !Ref ApplicationName for the production environment
+      ServiceRole: !Ref KubeDeployProductionRole
+      Artifacts:
+        Type: CODEPIPELINE
+        Packaging: ZIP
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: AWS_REGION
+            Type: PLAINTEXT
+            Value: !Ref "AWS::Region"
+          - Name: AWS_ACCOUNTID
+            Type: PLAINTEXT
+            Value: !Ref 'AWS::AccountId'
+          - Name: CLUSTER_NAME
+            Type: PLAINTEXT
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/production/kubernetes/cluster-name}}'
+          - Name: REDIS_CLUSTER_HOST
+            Type: PLAINTEXT
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/production/redis/address}}'
+          - Name: REDIS_CLUSTER_PORT
+            Type: PLAINTEXT
+            Value: !Sub '{{resolve:ssm:/${ApplicationName}/production/redis/port}}'
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+                - curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+                - helm version --short
+            build:
+              commands:
+                - IMAGE_TAG=$(git rev-parse --short HEAD)
+                - IMAGE_URL=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/$APPLICATION_NAME
+                - helm upgrade -i --debug $APPLICATION_NAME ./deployment/helm-chart --set application.name=$APPLICATION_NAME --set redis.host=$REDIS_CLUSTER_HOST --set redis.port=$REDIS_CLUSTER_PORT --set imageUrl=$IMAGE_URL --set imageTag=$IMAGE_TAG
+  Pipeline:
+    Description: Creating a deployment pipeline for !Ref ApplicationName project in AWS CodePipeline
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      Name: !Sub '${ApplicationName}-kube-pipeline'
+      RoleArn: !GetAtt
+        - PipelineRole
+        - Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref S3Bucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeStarSourceConnection
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ConnectionArn: !Ref GithubConnection
+                FullRepositoryId: !Ref GithubRepo
+                BranchName: !Ref GithubRepoBranch
+                OutputArtifactFormat: "CODEBUILD_CLONE_REF"
+        - Name: Build
+          Actions:
+            - Name: Build
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:
+                  Ref: BuildProject
+        - Name: Staging
+          Actions:
+            - Name: Deploy
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:
+                  Ref: KubeDeployStaging
+        - Name: Production
+          Actions:
+            - Name: ApproveDeployProd
+              RunOrder: 1
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Version: 1
+                Provider: Manual
+              Configuration:
+                CustomData: "Perform all necessary manual tests and verifications on \"staging\" environment before approving."
+            - Name: Deploy
+              RunOrder: 2
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName:
+                  Ref: KubeDeployProduction
+  EcrRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub '${ApplicationName}'

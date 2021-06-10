@@ -1,7 +1,13 @@
+include infra.env
+
 ifndef APPLICATION_NAME
 $(error APPLICATION_NAME is not set)
 endif
-include infra.env
+ifndef AWS_REGION
+$(error AWS_REGION is not set)
+endif
+
+include make-kubernetes.mk
 
 SHELL := /bin/bash
 
@@ -17,7 +23,7 @@ STAGING_ENVIRONMENT_STACK_NAME=$(APPLICATION_NAME)-staging-environment
 PRODUCTION_ENVIRONMENT_STACK_NAME=$(APPLICATION_NAME)-production-environment
 PIPELINE_STACK_NAME=$(APPLICATION_NAME)-pipeline
 
-.PHONY: ami pipeline ssh-key-pair s3-bucket
+.PHONY: toto ami pipeline ssh-key-pair s3-bucket
 
 .IGNORE: ami
 
@@ -25,12 +31,8 @@ all:
 	$(MAKE) -j3 ami s3-bucket ssh-key-pair
 	$(MAKE) -j2 staging-environment production-environment
 	$(MAKE) pipeline
-s3-bucket:
-	aws cloudformation deploy    \
-          --stack-name $(S3_BUCKET_STACK_NAME)   \
-          --template-file environment/s3-bucket/s3-bucket.yml   \
-          --parameter-overrides     \
-            BucketName=$(S3_BUCKET_NAME)
+requires-environment-set:
+	@if [ -z $(ENVIRONMENT) ]; then >&2 echo "ENVIRONMENT is not set"; exit 255; fi
 ssh-key-pair:
 	./ssh-key-pair/create-ssh-key-pair.sh $(SSH_KEY_NAME) $(SSH_KEY_PATH)
 ami:
@@ -69,6 +71,14 @@ pipeline:
 #        TestRunnerSecurityGroupId='sg-001765d4d50ff2df5'
 	rm pipeline/pipeline-packaged.yml
 
+s3-bucket:
+	aws cloudformation deploy    \
+          --stack-name $(S3_BUCKET_STACK_NAME)   \
+          --template-file s3-bucket/s3-bucket.yml   \
+          --parameter-overrides     \
+            BucketName=$(S3_BUCKET_NAME)
+delete-s3-bucket:
+	./stack-deletion/delete-stack-wait-termination.sh $(S3_BUCKET_STACK_NAME)
 
 delete-all:
 	$(MAKE) delete-pipeline
@@ -81,8 +91,6 @@ delete-all-except-ami-and-ssh-key-pair:
 delete-ami:
 	$(eval AMI_ID := $(shell aws ec2 describe-images --owners self --query "Images[?Name=='$(APPLICATION_NAME)'].ImageId" --output text))
 	aws ec2 deregister-image --image-id $(AMI_ID)
-delete-s3-bucket:
-	./stack-deletion/delete-stack-wait-termination.sh $(S3_BUCKET_STACK_NAME)
 delete-ssh-key-pair:
 	aws ec2 delete-key-pair --key-name $(SSH_KEY_NAME)
 delete-staging-environment:

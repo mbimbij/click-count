@@ -14,12 +14,12 @@ kube-all:
 	- $(MAKE) -j2 kube-cluster-staging kube-cluster-production
 	$(MAKE) -j2 kube-environment-staging kube-environment-production
 	$(MAKE) kube-pipeline
-delete-kube-all:
+kube-delete-all:
 	- $(MAKE) delete-kube-pipeline
 	- $(MAKE) -j2 delete-kube-environment-staging delete-kube-environment-production
 	- $(MAKE) -j2 delete-kube-cluster-staging delete-kube-cluster-production
 	- $(MAKE) delete-s3-bucket
-delete-kube-all-light:
+kube-delete-all-light:
 	$(MAKE) -j4 delete-kube-pipeline delete-kube-environment-staging delete-kube-environment-production delete-s3-bucket
 
 

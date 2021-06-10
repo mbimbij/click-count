@@ -2,6 +2,6 @@
 target/
 *.iml
 *processed.json
-*processed.yml
-*packaged.json
-*packaged.yml
+**/*processed.yml
+**/*packaged.json
+**/*packaged.yml

@@ -7,6 +7,16 @@ ELASTICACHE_STACK_BASE_NAME=$(APPLICATION_NAME)-elasticache
 KUBE_S3_BUCKET_NAME=$(AWS_REGION)-$(AWS_ACCOUNT_ID)-$(APPLICATION_NAME)-kube-bucket
 KUBE_S3_BUCKET_STACK_NAME=$(KUBE_S3_BUCKET_NAME)
 
+kube-all:
+	$(MAKE) kube-s3-bucket
+	$(MAKE) -j2 kube-cluster-staging kube-cluster-production
+	$(MAKE) -j2 elasticache-staging elasticache-production
+	$(MAKE) kube-pipeline
+
+kube-cluster-staging:
+	$(MAKE) kube-cluster ENVIRONMENT=staging
+kube-cluster-production:
+	$(MAKE) kube-cluster ENVIRONMENT=production
 kube-cluster: requires-environment-set
 	envsubst < kubernetes/cluster/cluster-template.yml > kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
 	- eksctl create cluster -f  kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
@@ -15,15 +25,15 @@ kube-cluster: requires-environment-set
 		--value "$(APPLICATION_NAME)-$(ENVIRONMENT)" \
 		--type "String" \
 		--overwrite
-	eksctl create iamidentitymapping \
-      --cluster $(APPLICATION_NAME)-$(ENVIRONMENT) \
-      --arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-role \
-      --group system:masters \
-      --username $(APPLICATION_NAME)-kube-deploy-role
+
 
 delete-kube-cluster: requires-environment-set
 	eksctl delete cluster $(APPLICATION_NAME)-$(ENVIRONMENT)
 
+elasticache-staging:
+	$(MAKE) elasticache ENVIRONMENT=staging
+elasticache-production:
+	$(MAKE) elasticache ENVIRONMENT=production
 elasticache: requires-environment-set
 	$(eval VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::VPC'].Value" --output text))
 	$(eval PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::SubnetsPrivate'].Value" --output text))
@@ -41,6 +51,11 @@ delete-elasticache: requires-environment-set
 	./stack-deletion/delete-stack-wait-termination.sh $(ELASTICACHE_STACK_BASE_NAME)-$(ENVIRONMENT)
 
 kube-pipeline: kube-s3-bucket
+	eksctl create iamidentitymapping \
+          --cluster $(APPLICATION_NAME)-staging \
+          --arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-role \
+          --group system:masters \
+          --username $(APPLICATION_NAME)-kube-deploy-role
 	aws cloudformation deploy    \
 		--stack-name $(KUBE_PIPELINE_STACK_NAME)   \
 		--template-file kubernetes/pipeline/kubernetes-pipeline.yml    \

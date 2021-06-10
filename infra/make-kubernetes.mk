@@ -30,9 +30,9 @@ kube-cluster: requires-environment-set
 	eksctl create cluster -f  kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
 	eksctl create iamidentitymapping \
 		--cluster $(APPLICATION_NAME)-staging \
-		--arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-role \
+		--arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-$(ENVIRONMENT)-role \
 		--group system:masters \
-		--username $(APPLICATION_NAME)-kube-deploy-role
+		--username $(APPLICATION_NAME)-kube-deploy-$(ENVIRONMENT)-role
 delete-kube-cluster-staging:
 	$(MAKE) delete-kube-cluster ENVIRONMENT=staging
 delete-kube-cluster-production:

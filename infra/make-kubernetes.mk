@@ -25,12 +25,19 @@ kube-cluster: requires-environment-set
 		--arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-role \
 		--group system:masters \
 		--username $(APPLICATION_NAME)-kube-deploy-role
-	aws ssm put-parameter \
-		--name "/$(APPLICATION_NAME)/$(ENVIRONMENT)/kubernetes/cluster-name" \
-		--value "$(APPLICATION_NAME)-$(ENVIRONMENT)" \
-		--type "String" \
-		--overwrite
-
+	#aws ssm put-parameter \
+#		--name "/$(APPLICATION_NAME)/$(ENVIRONMENT)/kubernetes/cluster-name" \
+#		--value "$(APPLICATION_NAME)-$(ENVIRONMENT)" \
+#		--type "String" \
+#		--overwrite
+kube-environment: requires-environment-set kube-s3-bucket
+	aws cloudformation package --template-file kubernetes/kube-environment.yml --output-template kubernetes/kube-environment-processed.yml --s3-bucket $(S3_BUCKET_NAME)
+	aws cloudformation deploy    \
+		--stack-name kube-$(APPLICATION_NAME)-$(ENVIRONMENT)   \
+		--template-file kubernetes/kube-environment-processed.yml    \
+		--parameter-overrides  \
+			ApplicationName=$(APPLICATION_NAME) \
+			Environment=$(ENVIRONMENT)
 
 delete-kube-cluster: requires-environment-set
 	eksctl delete cluster $(APPLICATION_NAME)-$(ENVIRONMENT)
@@ -52,6 +59,10 @@ elasticache: requires-environment-set
 		VpcId=$(VPC_ID) \
 		SubnetIds=$(PRIVATE_SUBNET_IDS) \
 		ApplicationSecurityGroupId=$(APPLICATION_SECURITY_GROUP_ID)
+delete-elasticache-staging:
+	$(MAKE) delete-elasticache ENVIRONMENT=staging
+delete-elasticache-production:
+	$(MAKE) delete-elasticache ENVIRONMENT=production
 delete-elasticache: requires-environment-set
 	./stack-deletion/delete-stack-wait-termination.sh $(ELASTICACHE_STACK_BASE_NAME)-$(ENVIRONMENT)
 
@@ -69,8 +80,6 @@ kube-pipeline: kube-s3-bucket
 delete-kube-pipeline:
 	./stack-deletion/delete-stack-wait-termination.sh $(KUBE_PIPELINE_STACK_NAME)
 
-delete-kube-parameters:
-	./stack-deletion/delete-parameteres-from-store.sh $(APPLICATION_NAME)
 
 delete-kube-all:
 	- $(MAKE) delete-kube-pipeline
@@ -79,8 +88,8 @@ delete-kube-all:
 	- $(MAKE) delete-elasticache ENVIRONMENT=production
 	- $(MAKE) delete-kube-cluster ENVIRONMENT=production
 	- $(MAKE) delete-kube-s3-bucket
-	- $(MAKE) delete-kube-parameters
-
+delete-kube-all-light:
+	$(MAKE) -j4 delete-kube-pipeline delete-elasticache-staging delete-elasticache-production delete-kube-s3-bucket
 
 kube-s3-bucket:
 	aws cloudformation deploy    \

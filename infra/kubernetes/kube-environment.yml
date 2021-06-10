@@ -1,0 +1,15 @@
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Application Name
+  Environment:
+    Type: String
+    Description: Environment
+Resources:
+  KubeClusterNameSsmParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/${ApplicationName}/${Environment}/kubernetes/cluster-name'
+      Type: String
+      Value: !Sub '${ApplicationName}-${Environment}'
+      Description: Kube Cluster Name Ssm Parameter

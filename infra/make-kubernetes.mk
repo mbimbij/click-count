@@ -35,6 +35,11 @@ kube-cluster: requires-environment-set
 		--arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-$(ENVIRONMENT)-role \
 		--group system:masters \
 		--username $(APPLICATION_NAME)-kube-deploy-$(ENVIRONMENT)-role
+	eksctl create iamidentitymapping \
+		--cluster $(APPLICATION_NAME)-$(ENVIRONMENT) \
+		--arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-$(ENVIRONMENT)-kube-test-role \
+		--group system:masters \
+		--username $(APPLICATION_NAME)-$(ENVIRONMENT)-kube-test-role
 delete-kube-cluster-staging:
 	$(MAKE) delete-kube-cluster ENVIRONMENT=staging
 delete-kube-cluster-production:
@@ -69,9 +74,10 @@ delete-kube-environment: requires-environment-set
 	./stack-deletion/delete-stack-wait-termination.sh kube-$(APPLICATION_NAME)-$(ENVIRONMENT)
 
 kube-pipeline: s3-bucket
+	aws cloudformation package --template-file kubernetes/pipeline/kubernetes-pipeline.yml --output-template output-templates/kubernetes-pipeline.yml --s3-bucket $(S3_BUCKET_NAME)
 	aws cloudformation deploy    \
 		--stack-name $(KUBE_PIPELINE_STACK_NAME)   \
-		--template-file kubernetes/pipeline/kubernetes-pipeline.yml    \
+		--template-file output-templates/kubernetes-pipeline.yml    \
 		--capabilities CAPABILITY_NAMED_IAM   \
 		--parameter-overrides     \
 		ApplicationName=$(APPLICATION_NAME)   \

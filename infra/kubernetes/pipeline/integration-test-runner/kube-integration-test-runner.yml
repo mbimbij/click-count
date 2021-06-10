@@ -1,0 +1,135 @@
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Application Name
+  Environment:
+    Type: String
+    Description: Environment
+  S3Bucket:
+    Type: String
+    Description: S3 Bucket
+  GithubConnection:
+    Type: String
+    Description: Github Connection Name
+  AlbWaitTimeoutSeconds:
+    Default: 300
+    Type: Number
+    Description: Alb Wait Timeout Seconds
+Resources:
+  TestRunnerRole:
+    Type: 'AWS::IAM::Role'
+    Description: IAM role for !Ref ApplicationName !Ref Environment test (using CodeBuild)
+    Properties:
+      RoleName: !Sub '${ApplicationName}-${Environment}-kube-test-role'
+      Policies:
+        - PolicyName: !Sub '${ApplicationName}-${Environment}-kube-test-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3Bucket}/*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - codebuild:CreateReportGroup
+                  - codebuild:CreateReport
+                  - codebuild:UpdateReport
+                  - codebuild:BatchPutTestCases
+                  - codebuild:BatchPutCodeCoverages
+                Resource: !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/${ApplicationName}-${Environment}*'
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GithubConnection
+              - Effect: Allow
+                Action:
+                  - eks:*
+                Resource: "*"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+  TestRunner:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ApplicationName}-${Environment}-kube-test-runner'
+      Description: A build project for !Ref ApplicationName !Ref Environment
+      ServiceRole: !Ref TestRunnerRole
+      Artifacts:
+        Type: CODEPIPELINE
+        Packaging: ZIP
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        EnvironmentVariables:
+          - Name: REST_ENDPOINT_PROTOCOL
+            Type: PLAINTEXT
+            Value: 'http'
+          - Name: REST_ENDPOINT_PORT
+            Type: PLAINTEXT
+            Value: '80'
+          - Name: APPLICATION_NAME
+            Type: PLAINTEXT
+            Value: !Ref ApplicationName
+          - Name: ENVIRONMENT
+            Type: PLAINTEXT
+            Value: !Ref Environment
+          - Name: CLUSTER_NAME
+            Type: PLAINTEXT
+            Value: !Sub '${ApplicationName}-${Environment}'
+          - Name: AWS_REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: ALB_WAIT_TIMEOUT_SECONDS
+            Type: PLAINTEXT
+            Value: !Ref AlbWaitTimeoutSeconds
+      Cache:
+        Type: S3
+        Location: !Sub '${S3Bucket}/maven-cache'
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                java: corretto11
+            pre_build:
+              commands:
+                - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+                - REST_ENDPOINT_HOSTNAME=$(kubectl get svc -ojsonpath="{.items[?(@.metadata.name=='click-count')].status.loadBalancer.ingress[*].hostname}") && export REST_ENDPOINT_HOSTNAME
+                - echo $REST_ENDPOINT_HOSTNAME
+                - timeout $ALB_WAIT_TIMEOUT_SECONDS bash -c 'until curl -X GET $REST_ENDPOINT_HOSTNAME; do echo "Load Balancer not accessible yet. Retrying in $RETRY_INTERVAL_SECONDS second(s)..."; sleep $RETRY_INTERVAL_SECONDS; done' || exit $?
+            build:
+              commands:
+                - mvn test -Dtest=ApiTestCucumberRunner
+          reports:
+            Report:
+              files:
+                - 'target/cucumber-reports/apitest/cucumber-apitest-results.xml'
+          cache:
+            paths:
+              - '/root/.m2/**/*'
+Outputs:
+  TestRunnerName:
+    Description: Name of the CodeBuild resource
+    Value: !Ref TestRunner
+  TestRunnerArn:
+    Description: Name of the CodeBuild resource
+    Value: !GetAtt [TestRunner, Arn]

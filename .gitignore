@@ -5,3 +5,4 @@ target/
 **/*processed.yml
 **/*packaged.json
 **/*packaged.yml
+**/output-templates/

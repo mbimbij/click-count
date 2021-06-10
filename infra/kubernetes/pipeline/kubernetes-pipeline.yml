@@ -196,15 +196,10 @@ Resources:
                   - codebuild:BatchGetBuildBatches
                   - codebuild:StartBuildBatch
                 Resource:
-                - !GetAtt
-                  - BuildProject
-                  - Arn
-                - !GetAtt
-                  - KubeDeployStaging
-                  - Arn
-                - !GetAtt
-                  - KubeDeployProduction
-                  - Arn
+                - !GetAtt [BuildProject, Arn]
+                - !GetAtt [KubeDeployStaging, Arn]
+                - !GetAtt [KubeDeployProduction, Arn]
+                - !GetAtt StagingTest.Outputs.TestRunnerArn
               - Effect: Allow
                 Action:
                   - s3:PutObject
@@ -326,6 +321,21 @@ Resources:
                 - IMAGE_TAG=$(git rev-parse --short HEAD)
                 - IMAGE_URL=$AWS_ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com/$APPLICATION_NAME
                 - helm upgrade -i --debug $APPLICATION_NAME ./deployment/helm-chart --set application.name=$APPLICATION_NAME --set redis.host=$REDIS_CLUSTER_HOST --set redis.port=$REDIS_CLUSTER_PORT --set imageUrl=$IMAGE_URL --set imageTag=$IMAGE_TAG
+  StagingTest:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'integration-test-runner/kube-integration-test-runner.yml'
+      Parameters:
+        ApplicationName:
+          Ref: ApplicationName
+        Environment: staging
+        S3Bucket:
+          Ref: S3Bucket
+        GithubConnection:
+          Ref: GithubConnection
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}::staging::KubeTestRunner'
   KubeDeployProduction:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -419,6 +429,7 @@ Resources:
         - Name: Staging
           Actions:
             - Name: Deploy
+              RunOrder: 1
               InputArtifacts:
                 - Name: SourceOutput
               ActionTypeId:
@@ -429,6 +440,17 @@ Resources:
               Configuration:
                 ProjectName:
                   Ref: KubeDeployStaging
+            - Name: Test
+              RunOrder: 2
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !GetAtt StagingTest.Outputs.TestRunnerName
         - Name: Production
           Actions:
             - Name: ApproveDeployProd

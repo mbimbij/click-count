@@ -84,7 +84,7 @@ Resources:
   Elasticache:
     Type: "AWS::CloudFormation::Stack"
     Properties:
-      TemplateURL: 'elasticache/redis-cluster-template.yml'
+      TemplateURL: '../elasticache/redis-cluster.yml'
       Parameters:
         VpcId: !GetAtt Network.Outputs.VPC
         SubnetIds: !GetAtt Network.Outputs.PrivateSubnets

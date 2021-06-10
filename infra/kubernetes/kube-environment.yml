@@ -1,0 +1,41 @@
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Application Name
+  Environment:
+    Type: String
+    Description: Environment
+  KubeVpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Vpc Id
+  KubePrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnet Ids
+  KubeNodesSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Kube Nodes Security Group Id
+Resources:
+  KubeClusterNameSsmParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/${ApplicationName}/${Environment}/kubernetes/cluster-name'
+      Type: String
+      Value: !Sub '${ApplicationName}-${Environment}'
+      Description: Kube Cluster Name Ssm Parameter
+  Elasticache:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: '../elasticache/redis-cluster.yml'
+      Parameters:
+        VpcId:
+          Ref: KubeVpcId
+        SubnetIds: !Join [',', !Ref KubePrivateSubnetIds]
+        ApplicationSecurityGroupId:
+          Ref: KubeNodesSecurityGroupId
+        ApplicationName:
+          Ref: ApplicationName
+        Environment:
+          Ref: Environment
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::/Elasticache'

@@ -1,10 +1,12 @@
+SHELL := /bin/bash
+
 ifndef APPLICATION_NAME
 $(error APPLICATION_NAME is not set)
 endif
 
 .IGNORE: s3-bucket
 
-KUBE_PIPELINE_STACK_NAME=$(APPLICATION_NAME)-kube-pipeline
+PIPELINE_STACK_NAME=$(APPLICATION_NAME)-kube-pipeline
 ELASTICACHE_STACK_BASE_NAME=$(APPLICATION_NAME)-elasticache
 
 kube-all:
@@ -46,9 +48,9 @@ kube-environment-staging:
 kube-environment-production:
 	$(MAKE) kube-environment ENVIRONMENT=production
 kube-environment: requires-environment-set s3-bucket
-	$(eval KUBE_VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::VPC'].Value" --output text))
-	$(eval KUBE_PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::SubnetsPrivate'].Value" --output text))
-	$(eval KUBE_SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::SharedNodeSecurityGroup'].Value" --output text))
+	$(eval VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::VPC'].Value" --output text))
+	$(eval PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::SubnetsPrivate'].Value" --output text))
+	$(eval SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::SharedNodeSecurityGroup'].Value" --output text))
 	cd kubernetes && aws cloudformation package --template-file kube-environment.yml --output-template kube-environment-packaged.yml --s3-bucket $(S3_BUCKET_NAME)
 	aws cloudformation deploy    \
 		--stack-name kube-$(APPLICATION_NAME)-$(ENVIRONMENT)   \
@@ -56,9 +58,9 @@ kube-environment: requires-environment-set s3-bucket
 		--parameter-overrides  \
 			ApplicationName=$(APPLICATION_NAME) \
 			Environment=$(ENVIRONMENT) \
-			KubeVpcId=$(KUBE_VPC_ID) \
-			KubePrivateSubnetIds=$(KUBE_PRIVATE_SUBNET_IDS) \
-			KubeNodesSecurityGroupId=$(KUBE_SECURITY_GROUP_ID)
+			KubeVpcId=$(VPC_ID) \
+			KubePrivateSubnetIds=$(PRIVATE_SUBNET_IDS) \
+			KubeNodesSecurityGroupId=$(SECURITY_GROUP_ID)
 delete-kube-environment-staging:
 	$(MAKE) delete-kube-environment ENVIRONMENT=staging
 delete-kube-environment-production:
@@ -68,7 +70,7 @@ delete-kube-environment: requires-environment-set
 
 kube-pipeline: s3-bucket
 	aws cloudformation deploy    \
-		--stack-name $(KUBE_PIPELINE_STACK_NAME)   \
+		--stack-name $(PIPELINE_STACK_NAME)   \
 		--template-file kubernetes/pipeline/kubernetes-pipeline.yml    \
 		--capabilities CAPABILITY_NAMED_IAM   \
 		--parameter-overrides     \
@@ -77,4 +79,4 @@ kube-pipeline: s3-bucket
 		GithubRepo=$(GITHUB_REPO)   \
 		GithubRepoBranch=$(GITHUB_REPO_BRANCH)
 delete-kube-pipeline:
-	./stack-deletion/delete-stack-wait-termination.sh $(KUBE_PIPELINE_STACK_NAME)
+	./stack-deletion/delete-stack-wait-termination.sh $(PIPELINE_STACK_NAME)

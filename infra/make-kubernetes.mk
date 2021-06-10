@@ -75,6 +75,6 @@ kube-pipeline: s3-bucket
 		ApplicationName=$(APPLICATION_NAME)   \
 		S3Bucket=$(S3_BUCKET_NAME) \
 		GithubRepo=$(GITHUB_REPO)   \
-		GithubRepoBranch=$(GITHUB_REPO_BRANCH) \
+		GithubRepoBranch=$(GITHUB_REPO_BRANCH)
 delete-kube-pipeline:
 	./stack-deletion/delete-stack-wait-termination.sh $(KUBE_PIPELINE_STACK_NAME)

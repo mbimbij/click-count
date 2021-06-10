@@ -19,7 +19,12 @@ kube-cluster-production:
 	$(MAKE) kube-cluster ENVIRONMENT=production
 kube-cluster: requires-environment-set
 	envsubst < kubernetes/cluster/cluster-template.yml > kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
-	- eksctl create cluster -f  kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
+	eksctl create cluster -f  kubernetes/cluster/$(ENVIRONMENT)-cluster-processed.yml
+	eksctl create iamidentitymapping \
+		--cluster $(APPLICATION_NAME)-staging \
+		--arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-role \
+		--group system:masters \
+		--username $(APPLICATION_NAME)-kube-deploy-role
 	aws ssm put-parameter \
 		--name "/$(APPLICATION_NAME)/$(ENVIRONMENT)/kubernetes/cluster-name" \
 		--value "$(APPLICATION_NAME)-$(ENVIRONMENT)" \
@@ -51,11 +56,6 @@ delete-elasticache: requires-environment-set
 	./stack-deletion/delete-stack-wait-termination.sh $(ELASTICACHE_STACK_BASE_NAME)-$(ENVIRONMENT)
 
 kube-pipeline: kube-s3-bucket
-	eksctl create iamidentitymapping \
-          --cluster $(APPLICATION_NAME)-staging \
-          --arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-role \
-          --group system:masters \
-          --username $(APPLICATION_NAME)-kube-deploy-role
 	aws cloudformation deploy    \
 		--stack-name $(KUBE_PIPELINE_STACK_NAME)   \
 		--template-file kubernetes/pipeline/kubernetes-pipeline.yml    \

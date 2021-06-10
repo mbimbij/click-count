@@ -428,7 +428,17 @@ Resources:
                   Ref: KubeDeployStaging
         - Name: Production
           Actions:
+            - Name: ApproveDeployProd
+              RunOrder: 1
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Version: 1
+                Provider: Manual
+              Configuration:
+                CustomData: "Perform all necessary manual tests and verifications on \"staging\" environment before approving."
             - Name: Deploy
+              RunOrder: 2
               InputArtifacts:
                 - Name: SourceOutput
               ActionTypeId:

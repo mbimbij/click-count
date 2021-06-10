@@ -69,6 +69,9 @@ kube-pipeline: kube-s3-bucket
 delete-kube-pipeline:
 	./stack-deletion/delete-stack-wait-termination.sh $(KUBE_PIPELINE_STACK_NAME)
 
+delete-kube-parameters:
+	./stack-deletion/delete-parameteres-from-store.sh $(APPLICATION_NAME)
+
 delete-kube-all:
 	- $(MAKE) delete-kube-pipeline
 	- $(MAKE) delete-elasticache ENVIRONMENT=staging
@@ -76,6 +79,7 @@ delete-kube-all:
 	- $(MAKE) delete-elasticache ENVIRONMENT=production
 	- $(MAKE) delete-kube-cluster ENVIRONMENT=production
 	- $(MAKE) delete-kube-s3-bucket
+	- $(MAKE) delete-kube-parameters
 
 
 kube-s3-bucket:

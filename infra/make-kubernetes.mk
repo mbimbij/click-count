@@ -2,12 +2,14 @@ ifndef APPLICATION_NAME
 $(error APPLICATION_NAME is not set)
 endif
 
+.IGNORE: s3-bucket
+
 KUBE_PIPELINE_STACK_NAME=$(APPLICATION_NAME)-kube-pipeline
 ELASTICACHE_STACK_BASE_NAME=$(APPLICATION_NAME)-elasticache
 
 kube-all:
 	$(MAKE) s3-bucket
-	$(MAKE) -j2 kube-cluster-staging kube-cluster-production
+	- $(MAKE) -j2 kube-cluster-staging kube-cluster-production
 	$(MAKE) -j2 kube-environment-staging kube-environment-production
 	$(MAKE) kube-pipeline
 delete-kube-all:

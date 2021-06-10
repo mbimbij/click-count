@@ -200,6 +200,7 @@ Resources:
                 - !GetAtt [KubeDeployStaging, Arn]
                 - !GetAtt [KubeDeployProduction, Arn]
                 - !GetAtt StagingTest.Outputs.TestRunnerArn
+                - !GetAtt ProductionTest.Outputs.TestRunnerArn
               - Effect: Allow
                 Action:
                   - s3:PutObject
@@ -336,6 +337,21 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${ApplicationName}::staging::KubeTestRunner'
+  ProductionTest:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'integration-test-runner/kube-integration-test-runner.yml'
+      Parameters:
+        ApplicationName:
+          Ref: ApplicationName
+        Environment: production
+        S3Bucket:
+          Ref: S3Bucket
+        GithubConnection:
+          Ref: GithubConnection
+      Tags:
+        - Key: Name
+          Value: !Sub '${ApplicationName}::production::KubeTestRunner'
   KubeDeployProduction:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -474,6 +490,17 @@ Resources:
               Configuration:
                 ProjectName:
                   Ref: KubeDeployProduction
+            - Name: Test
+              RunOrder: 3
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !GetAtt ProductionTest.Outputs.TestRunnerName
   EcrRepository:
     Type: AWS::ECR::Repository
     Properties:

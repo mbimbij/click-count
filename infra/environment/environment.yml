@@ -93,7 +93,6 @@ Resources:
           Ref: ApplicationName
         Environment:
           Ref: Environment
-        ClusterName: !Sub 'ec2-${ApplicationName}-${Environment}'
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::/Elasticache'

@@ -28,9 +28,6 @@ Parameters:
   Environment:
     Type: String
     Description: "Environment: staging, production, etc."
-  ClusterName:
-    Type: String
-    Description: Cluster Name
 Resources:
   ElasticacheSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -62,7 +59,7 @@ Resources:
       CacheSubnetGroupName: !Ref ElasticacheSubnetGroup
       Tags:
         - Key: Name
-          Value: !Ref ClusterName
+          Value: !Sub '${ApplicationName}-${Environment}-redis'
         - Key: Application
           Value: !Sub '${ApplicationName}'
         - Key: Environment

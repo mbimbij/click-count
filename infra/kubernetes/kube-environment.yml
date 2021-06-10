@@ -36,7 +36,6 @@ Resources:
           Ref: ApplicationName
         Environment:
           Ref: Environment
-        ClusterName: !Sub 'kube-${ApplicationName}-${Environment}'
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::/Elasticache'

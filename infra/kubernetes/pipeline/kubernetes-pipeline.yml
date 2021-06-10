@@ -267,7 +267,7 @@ Resources:
                 - echo Build started on `date`
                 - echo Building the Docker image...
                 - echo "IMAGE_TAG= $IMAGE_TAG"
-                - mvn clean package -p docker
+                - mvn clean package -P docker
                 - IMAGE_NAME=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.artifactId}' --non-recursive exec:exec)
                 - docker tag $IMAGE_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$APPLICATION_NAME:$IMAGE_TAG
             post_build:

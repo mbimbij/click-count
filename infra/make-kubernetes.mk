@@ -25,19 +25,20 @@ kube-cluster: requires-environment-set
 		--arn arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(APPLICATION_NAME)-kube-deploy-role \
 		--group system:masters \
 		--username $(APPLICATION_NAME)-kube-deploy-role
-	#aws ssm put-parameter \
-#		--name "/$(APPLICATION_NAME)/$(ENVIRONMENT)/kubernetes/cluster-name" \
-#		--value "$(APPLICATION_NAME)-$(ENVIRONMENT)" \
-#		--type "String" \
-#		--overwrite
 kube-environment: requires-environment-set kube-s3-bucket
-	aws cloudformation package --template-file kubernetes/kube-environment.yml --output-template kubernetes/kube-environment-processed.yml --s3-bucket $(S3_BUCKET_NAME)
+	$(eval KUBE_VPC_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::VPC'].Value" --output text))
+	$(eval KUBE_PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::SubnetsPrivate'].Value" --output text))
+	$(eval KUBE_SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='eksctl-$(APPLICATION_NAME)-$(ENVIRONMENT)-cluster::SharedNodeSecurityGroup'].Value" --output text))
+	cd kubernetes && aws cloudformation package --template-file kube-environment.yml --output-template kube-environment-packaged.yml --s3-bucket $(KUBE_S3_BUCKET_NAME)
 	aws cloudformation deploy    \
 		--stack-name kube-$(APPLICATION_NAME)-$(ENVIRONMENT)   \
-		--template-file kubernetes/kube-environment-processed.yml    \
+		--template-file kubernetes/kube-environment-packaged.yml    \
 		--parameter-overrides  \
 			ApplicationName=$(APPLICATION_NAME) \
-			Environment=$(ENVIRONMENT)
+			Environment=$(ENVIRONMENT) \
+			KubeVpcId=$(KUBE_VPC_ID) \
+			KubePrivateSubnetIds=$(KUBE_PRIVATE_SUBNET_IDS) \
+			KubeNodesSecurityGroupId=$(KUBE_SECURITY_GROUP_ID)
 
 delete-kube-cluster: requires-environment-set
 	eksctl delete cluster $(APPLICATION_NAME)-$(ENVIRONMENT)

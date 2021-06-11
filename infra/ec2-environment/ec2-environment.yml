@@ -116,6 +116,7 @@ Resources:
       Parameters:
         VpcId: !GetAtt Network.Outputs.VPC
         SubnetId: !GetAtt Network.Outputs.PrivateSubnet1
+        PublicSubnetIds: !GetAtt Network.Outputs.PublicSubnets
         BastionHostSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
         TestRunnerSecurityGroupId: !GetAtt TestRunnerSecurityGroup.Outputs.SecurityGroupId
         ApplicationName:

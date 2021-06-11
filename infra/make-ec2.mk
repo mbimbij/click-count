@@ -53,12 +53,12 @@ ec2-pipeline:
 	rm ec2-environment/pipeline/pipeline-packaged.yml
 
 delete-ec2-all:
-	$(MAKE) delete-pipeline
+	$(MAKE) delete-ec2-pipeline
 	$(MAKE) -j2 delete-ec2-staging-environment delete-ec2-production-environment
 	$(MAKE) -j3 delete-ssh-key-pair delete-s3-bucket delete-ami
 delete-ec2-all-except-ami-and-ssh-key-pair:
-	$(MAKE) delete-pipeline
-	$(MAKE) -j2 delete-staging-environment delete-production-environment
+	$(MAKE) delete-ec2-pipeline
+	$(MAKE) -j2 delete-ec2-staging-environment delete-ec2-production-environment
 	$(MAKE) delete-s3-bucket
 delete-ec2-ami:
 	$(eval AMI_ID := $(shell aws ec2 describe-images --owners self --query "Images[?Name=='$(APPLICATION_NAME)'].ImageId" --output text))

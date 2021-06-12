@@ -335,4 +335,4 @@ Malheureusement, j'ai supprimé les infras et pipeline au moment de la rédactio
 [ERROR] strategy = org.codehaus.plexus.classworlds.strategy.SelfFirstStrategy
 ```
 
-2. Je viens de voir (12/06/2021) qu'il y avait un fichier `.travis` dans le repo de base -_- ... 
+2. Je viens de voir (12/06/2021) qu'il y avait un fichier `.travis` dans le repo de base -_- ... Je pense que ça devrait être explicité dans l'énoncé: "un fichier .travis est fourni, vous pouvez partir dessus ou utiliser un autre outil)

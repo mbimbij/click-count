@@ -106,7 +106,7 @@ Notre application tourne dans une instance EC2, dans un sous-réseau privé, et 
 
 Le code de cette infra se trouve dans `infra/ec2-environment`, est composé de plusieurs "modules", assemblés dans `infra/ec2-environment/ec2-environment.yml`
 
-Tout est créé via `CloudFormation`, à l'éxécution de l'AMI de nos instances de staging et production, qui utilise `Packer`.
+Tout est créé via `CloudFormation`, à l'exception de l'AMI de nos instances de staging et production, qui utilise `Packer`.
 La création du tout: ami, environnement (réseau, cluster redis, instance EC2), pipeline est orchestré par `Makefile`
 
 ## Création de l'infra EC2, éxécution de la pipeline, suppression des ressources

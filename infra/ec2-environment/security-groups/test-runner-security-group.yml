@@ -13,6 +13,7 @@ Resources:
   TestRunnerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      GroupName: '${ApplicationName}::${Environment}::TestSG'
       GroupDescription: test runner security group
       VpcId: !Ref VpcId
 Outputs:

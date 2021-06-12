@@ -1,0 +1,79 @@
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Application Name
+  Environment:
+    Type: String
+    Description: Environment (staging, prod, ...)
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Vpc Id
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnet Ids
+  ApplicationPort:
+    Default: 8080
+    Type: Number
+    Description: Subnet Name
+  LoadBalancerPort:
+    Default: 80
+    Type: Number
+    Description: Subnet Name
+  Ec2InstanceId:
+    Type: AWS::EC2::Instance::Id
+    Description: Ec2 Instance Id
+  LoadBalancerSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Load Balancer Security Group
+Resources:
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${ApplicationName}-${Environment}-tg'
+      HealthCheckEnabled: true
+      HealthCheckPort: !Ref ApplicationPort
+      HealthCheckIntervalSeconds: 15
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      HealthCheckPath: "/actuator/health"
+      TargetType: instance
+      Protocol: HTTP
+      Port: !Ref LoadBalancerPort
+      VpcId: !Ref VpcId
+      Targets:
+        - Id: !Ref Ec2InstanceId
+          Port: !Ref ApplicationPort
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${ApplicationName}-${Environment}-lb'
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroupId
+      Type: application
+      Subnets: !Ref PublicSubnetIds
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: "forward"
+          ForwardConfig:
+            TargetGroups:
+              - TargetGroupArn: !Ref TargetGroup
+                Weight: 1
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: !Ref LoadBalancerPort
+      Protocol: "HTTP"
+  LoadBalancerDNSNameSsmParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/${ApplicationName}/${Environment}/load-balancer/dns-name'
+      Type: String
+      Value: !GetAtt [ LoadBalancer, DNSName ]
+      Description: Elasticache Port
+Outputs:
+  DNSName:
+    Value: !GetAtt [LoadBalancer, DNSName]
+    Export:
+      Name: !Sub '${ApplicationName}::${Environment}::DNSName'

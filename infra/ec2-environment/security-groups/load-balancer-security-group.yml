@@ -1,0 +1,32 @@
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Application Name
+  Environment:
+    Type: String
+    Description: Environment (staging, prod, ...)
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Vpc Id
+  LoadBalancerPort:
+    Default: 80
+    Type: Number
+    Description: Subnet Name
+
+Resources:
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: '${ApplicationName}::${Environment}::LBSG'
+      GroupDescription: Alb security group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref LoadBalancerPort
+          ToPort: !Ref LoadBalancerPort
+          CidrIp: 0.0.0.0/0
+Outputs:
+  SecurityGroupId:
+    Value: !GetAtt [ LoadBalancerSecurityGroup, GroupId ]
+    Export:
+      Name: !Sub '${ApplicationName}::${Environment}::LoadBalancerSecurityGroup'

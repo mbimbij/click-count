@@ -17,9 +17,6 @@ Parameters:
   SubnetId:
     Type: String
     Description: Subnet Id
-  PublicSubnetIds:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: Subnet Ids
   ApplicationPort:
     Default: 8080
     Type: Number
@@ -34,6 +31,9 @@ Parameters:
   TestRunnerSecurityGroupId:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Test Runner Security Group
+  LoadBalancerSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Load Balancer Security Group
   InstanceType:
     Type: String
     Description: Instance Type
@@ -60,7 +60,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: !Ref ApplicationPort
           ToPort: !Ref ApplicationPort
-          SourceSecurityGroupId: !Ref AlbSecurityGroup
+          SourceSecurityGroupId: !Ref LoadBalancerSecurityGroupId
   Ec2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -110,60 +110,14 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-  AlbSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Alb security group
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-  TargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      HealthCheckEnabled: true
-      HealthCheckPort: !Ref ApplicationPort
-      HealthCheckIntervalSeconds: 15
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 2
-      HealthCheckPath: "/actuator/health"
-      TargetType: instance
-      Protocol: HTTP
-      Port: !Ref LoadBalancerPort
-      VpcId: !Ref VpcId
-      Targets:
-        - Id: !Ref Ec2Instance
-          Port: !Ref ApplicationPort
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: MyLoadBalancer
-      Scheme: internet-facing
-      SecurityGroups:
-        - !Ref AlbSecurityGroup
-      Type: application
-      Subnets: !Ref PublicSubnetIds
-  LoadBalancerListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: "forward"
-          ForwardConfig:
-            TargetGroups:
-              - TargetGroupArn: !Ref TargetGroup
-                Weight: 1
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: !Ref LoadBalancerPort
-      Protocol: "HTTP"
 Outputs:
   InstanceDns:
-    Value: !GetAtt
-      - Ec2Instance
-      - PrivateDnsName
+    Value: !GetAtt [Ec2Instance, PrivateDnsName]
     Export:
       Name: !Sub '${ApplicationName}::${Environment}::InstancePrivateDns'
+  InstanceId:
+    Value: !Ref Ec2Instance
+    Export:
+      Name: !Sub '${ApplicationName}::${Environment}::InstanceId'
   SecurityGroupId:
     Value: !GetAtt [ Ec2SecurityGroup, GroupId ]

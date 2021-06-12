@@ -80,7 +80,7 @@ Resources:
           Ref: KeyName
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}::/BastionHost'
+          Value: !Sub '${AWS::StackName}::BastionHost'
   Elasticache:
     Type: "AWS::CloudFormation::Stack"
     Properties:
@@ -95,7 +95,7 @@ Resources:
           Ref: Environment
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}::/Elasticache'
+          Value: !Sub '${AWS::StackName}::Elasticache'
   TestRunnerSecurityGroup:
     Type: "AWS::CloudFormation::Stack"
     Properties:
@@ -108,7 +108,7 @@ Resources:
         VpcId: !GetAtt Network.Outputs.VPC
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}::/TestRunnerSecurityGroup'
+          Value: !Sub '${AWS::StackName}::TestRunnerSecurityGroup'
   Ec2Instance:
     Type: "AWS::CloudFormation::Stack"
     Properties:
@@ -116,9 +116,9 @@ Resources:
       Parameters:
         VpcId: !GetAtt Network.Outputs.VPC
         SubnetId: !GetAtt Network.Outputs.PrivateSubnet1
-        PublicSubnetIds: !GetAtt Network.Outputs.PublicSubnets
         BastionHostSecurityGroupId: !GetAtt BastionHost.Outputs.SecurityGroupId
         TestRunnerSecurityGroupId: !GetAtt TestRunnerSecurityGroup.Outputs.SecurityGroupId
+        LoadBalancerSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.Outputs.SecurityGroupId
         ApplicationName:
           Ref: ApplicationName
         KeyName:
@@ -131,4 +131,33 @@ Resources:
           Ref: ApplicationInstanceType
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}::/Ec2Instance'
+          Value: !Sub '${AWS::StackName}::Ec2Instance'
+  LoadBalancerSecurityGroup:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'security-groups/load-balancer-security-group.yml'
+      Parameters:
+        ApplicationName:
+          Ref: ApplicationName
+        Environment:
+          Ref: Environment
+        VpcId: !GetAtt Network.Outputs.VPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::LoadBalancerSecurityGroup'
+  LoadBalancer:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: 'load-balancer/load-balancer.yml'
+      Parameters:
+        VpcId: !GetAtt Network.Outputs.VPC
+        PublicSubnetIds: !GetAtt Network.Outputs.PublicSubnets
+        LoadBalancerSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.Outputs.SecurityGroupId
+        ApplicationName:
+          Ref: ApplicationName
+        Environment:
+          Ref: Environment
+        Ec2InstanceId: !GetAtt Ec2Instance.Outputs.InstanceId
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}::Ec2Instance'

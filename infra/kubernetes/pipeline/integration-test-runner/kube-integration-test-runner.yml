@@ -15,6 +15,10 @@ Parameters:
     Default: 300
     Type: Number
     Description: Alb Wait Timeout Seconds
+  RetryIntervalSeconds:
+    Default: 2
+    Type: Number
+    Description: Alb Wait Timeout Seconds
 Resources:
   TestRunnerRole:
     Type: 'AWS::IAM::Role'
@@ -99,6 +103,9 @@ Resources:
           - Name: ALB_WAIT_TIMEOUT_SECONDS
             Type: PLAINTEXT
             Value: !Ref AlbWaitTimeoutSeconds
+          - Name: RETRY_INTERVAL_SECONDS
+            Type: PLAINTEXT
+            Value: !Ref RetryIntervalSeconds
       Cache:
         Type: S3
         Location: !Sub '${S3Bucket}/maven-cache'

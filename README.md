@@ -334,3 +334,5 @@ Malheureusement, j'ai supprimé les infras et pipeline au moment de la rédactio
 [ERROR] realm =    plugin>org.apache.maven.plugins:maven-war-plugin:2.2
 [ERROR] strategy = org.codehaus.plexus.classworlds.strategy.SelfFirstStrategy
 ```
+
+2. Je viens de voir (12/06/2021) qu'il y avait un fichier `.travis` dans le repo de base -_- ... 

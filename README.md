@@ -22,7 +22,7 @@ Sommaire
   * [Présentation infra et pipeline Kube](#présentation-infra-et-pipeline-kube)
   * [Création de l'infra Kube, éxécution de la pipeline, suppression des ressources](#création-de-linfra-ec2-éxécution-de-la-pipeline-suppression-des-ressources)
 - [Une appartée sur les tests](#une-appartée-sur-les-tests)
-- [Reste à faire](#reste-à-faire)
+- [Reste à faire et suite](#reste-à-faire-et-suite)
 - [Notes](#notes)
 
 ---
@@ -315,14 +315,21 @@ Ces tests génèrent un rapport d'éxécution, accessible dans "Reports" de l'é
 
 Malheureusement, j'ai supprimé les infras et pipeline au moment de la rédaction de ces lignes, du coup pas de screenshot. Mais vous devriez pouvoir trouver 
 
-# Reste à faire 
+# Reste à faire et suite
 
+Reste à faire:
 1. Mieux définir et expliciter les propriétés des templates `CloudFormation` pour les environnements de staging et de prod. À part la configuration réseau pour le déploiement EC2, les environnements sont des clones avec les mêmes paramètres
 2. Lancer les tests d'API pour le déploiement EC2 au niveau du Load Balancer. Ils ne sont éxécutés qu'au niveau de l'instance
-3. Ajouter de la configuration SSL/TLS et plus se pencher sur la sécurité.
-4. Rollback automatique en cas d'erreur. Typiquement via une alerte `CloudWatch` si l'application log une erreur, renvoie une HTTP5XX, etc.
-5. Appliquer les modifications d'infra pavia r une pipeline dédiée à l'infra. À l'image de l'application ou de sa configuaration qui n'ont pas à être modifiés manuellement sur un environnement, on estime que l'infra ne devrait pas être modifiée par action d'un dev et/ou ops depuis son laptop, mais par une pipeline de déploiement, après tests tout aussi rigoureux que ceux appliqués à l'application.
-6. Le reste à détermine au fur et à mesure
+3. Utiliser un auto-scaling group au lieu d'une seule instance 
+4. Ajouter de la configuration SSL/TLS et plus se pencher sur la sécurité.
+5. Rollback automatique en cas d'erreur. Typiquement via une alerte `CloudWatch` si l'application log une erreur, renvoie une HTTP5XX, etc.
+6. Appliquer les modifications d'infra par une pipeline dédiée à l'infra. À l'image de l'application ou de sa configuaration qui n'ont pas à être modifiés manuellement sur un environnement, on estime que l'infra ne devrait pas être modifiée par action d'un dev et/ou ops depuis son laptop, mais par une pipeline de déploiement, après tests tout aussi rigoureux que ceux appliqués à l'application.
+7. Le reste à détermine au fur et à mesure
+
+Suite:
+1. Investiguer d'autres outils de CI/CD: travis, circleci, drone.io, gitlab-ci, argoCD, fluxCD, etc.
+2. Investiguer des alternatives Monter l'infra sur d'autres cloud providers: Azure, GCP, Scaleway, etc.
+3. Le reste à détermine au fur et à mesure
 
 # Notes
 

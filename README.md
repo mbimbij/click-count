@@ -330,7 +330,8 @@ Suite:
 1. Investiguer d'autres outils de CI/CD: travis, circleci, drone.io, gitlab-ci, argoCD, fluxCD, etc.
 2. Investiguer d'autres cloud providers: Azure, GCP, Scaleway, etc.
 3. déployer dans des solutions FaaS: AWS Lambda, Azure functions, etc.
-4. Le reste à détermine au fur et à mesure
+4. Utiliser un repository d'artefact (`CodeArtifact` dans le cas d'AWS) au lieu de déployer uniquement depuis la sortie du build. Cela devrait faciliter les rollbacks et ouvrir la possibilité de déployer n'importe quelle version à partir du numéro de version et/ou du hash de commit.
+5. Le reste à détermine au fur et à mesure
 
 # Notes
 

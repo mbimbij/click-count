@@ -328,8 +328,9 @@ Reste à faire:
 
 Suite:
 1. Investiguer d'autres outils de CI/CD: travis, circleci, drone.io, gitlab-ci, argoCD, fluxCD, etc.
-2. Investiguer des alternatives Monter l'infra sur d'autres cloud providers: Azure, GCP, Scaleway, etc.
-3. Le reste à détermine au fur et à mesure
+2. Investiguer d'autres cloud providers: Azure, GCP, Scaleway, etc.
+3. déployer dans des solutions FaaS: AWS Lambda, Azure functions, etc.
+4. Le reste à détermine au fur et à mesure
 
 # Notes
 

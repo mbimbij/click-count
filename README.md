@@ -10,6 +10,7 @@ Sommaire
 <!--ts-->
 
 - [Introduction, Description du travail effectué](#introduction-description-du-travail-effectué)
+  * [Description du contenu du repo](#description-du-contenu-du-repo)
 - [Récupération des sources et configuration des futures infra](#récupération-des-sources-et-configuration-des-futures-infra)
 - [Lancement du projet Java en local](#lancement-du-projet-java-en-local)
   * [Pré-requis éxécution locale](#pré-requis-éxécution-locale)
@@ -20,7 +21,7 @@ Sommaire
 - [Solution basée sur une infra Kubernetes](#solution-basée-sur-une-infra-kubernetes)
   * [Pré-requis déploiement Kube](#pré-requis-déploiement-kubernetes)
   * [Présentation infra et pipeline Kube](#présentation-infra-et-pipeline-kube)
-  * [Création de l'infra Kube, éxécution de la pipeline, suppression des ressources](#création-de-linfra-ec2-éxécution-de-la-pipeline-suppression-des-ressources)
+  * [Création de l'infra Kube, éxécution de la pipeline, suppression des ressources](#création-de-linfra-kube-éxécution-de-la-pipeline-suppression-des-ressources)
 - [Une appartée sur les tests](#une-appartée-sur-les-tests)
 - [Reste à faire et suite](#reste-à-faire-et-suite)
 - [Notes](#notes)
@@ -37,6 +38,28 @@ Ce projet est composé de:
 - Code source Java migré de `Tomcat` à `SpringBoot`, avec des tests d'intégration en local basés sur [testcontainers](https://www.testcontainers.org/).
 - Code d'infra et de pipeline pour des déploiements basés sur EC2
 - Code d'infra et de pipeline pour des déploiements basés sur Kubernetes (AWS EKS)
+
+## Description du contenu du repo
+
+```shell
+.
+├── application.service             # description du service systemD pour les déploiement dans EC2
+├── appspec.yml                     # configuration du déploiement pour `CodeDeploy`,dans le cadre du déploiement dans EC2
+├── deployment
+│   ├── conf                        # contient le fichier de props de l'application SpringBoot, templatisé pour le déploiement dans les environnements `staging` et `production`
+│   ├── helm-chart                  # chart Helm pour le déploiement de l'application dans Kube
+│   └── scripts                     # scripts éxécutés dans les "lifecycle hooks", par `CodeDeploy`, dans le cadre du déploiement dans EC2
+├── docker-compose.yml              # un conteneur `Redis` pour lancer l'application localement
+├── infra
+│   ├── ec2-environment             # templates `CloudFormation` spécifiques au déploiement EC2
+│   ├── elasticache                 # template pour créer un cluster Elasticache / Redis. Utilisé pour les déploiements EC2 et Kube
+│   ├── kubernetes                  # ressources `CloudFormation` et `eksctl` spécifiques au déploiement EC2
+│   ├── make-ec2.mk                 # targets Makefile de création et suppression des ressources d'infra pour les déploiements EC2
+│   ├── make-kubernetes.mk          # targets Makefile de création et suppression des ressources d'infra pour les déploiements Kube 
+├── README.md
+└── src                             # code "de prod" et "de test" de l'application Java
+
+```
 
 # Récupération des sources et configuration des futures infra
 
@@ -112,6 +135,7 @@ La création du tout: ami, environnement (réseau, cluster redis, instance EC2),
 ## Création de l'infra EC2, éxécution de la pipeline, suppression des ressources
 
 L'infra est créée par un `Makefile`.
+
 0. forkez le repo et modifier la variable `GITHUB_REPO` dans `infra/infra.env` (cf [pré-requis](#pré-requis))
 1. déplacez-vous dans le répertoire `infra`: `cd infra`
 2. lancez la création des environnements `staging`, `production` et la pipeline de déploiement: `make ec2-all APPLICATION_NAME=click-count`. Vérifiez la création des stacks `CloudFormation`. Comptez 20-30 minutes
@@ -215,6 +239,7 @@ Nous allons maintenant nos ressources d'infra et éxécuter la pipeline jusqu'au
 ## Création de l'infra Kube, éxécution de la pipeline, suppression des ressources
 
 L'infra est créée par un `Makefile`.
+
 0. forkez le repo et modifier la variable `GITHUB_REPO` dans `infra/infra.env` (cf [pré-requis](#pré-requis))
 1. déplacez-vous dans le répertoire `infra`: `cd infra`
 2. Si vous avez créé juste avant le déploiement EC2 et ne l'avez pas encore supprimé, utilisez un autre compte AWS ou une autre région. Ce projet utilise la variable d'environnement `AWS_REGION`.
@@ -313,7 +338,15 @@ Voici les tests que nous avons rajouté au projet et aux pipelines :
 
 Ces tests génèrent un rapport d'éxécution, accessible dans "Reports" de l'éxécution `CodeBuild`, ou encore dans "Report Groups".
 
-Malheureusement, j'ai supprimé les infras et pipeline au moment de la rédaction de ces lignes, du coup pas de screenshot. Mais vous devriez pouvoir trouver 
+Malheureusement, j'ai supprimé les infras et pipeline au moment de la rédaction de ces lignes. Voici des screenshots issus d'un autre projet:
+
+Dans le détail d'un build, allez sur "Report"
+
+![](docs/16-test-report.png)
+
+Cliquez sur le rapport, et vous devriez avoir un affichage similaire au suivant:
+
+![](docs/17-test-report.png)
 
 # Reste à faire et suite
 

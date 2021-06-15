@@ -21,10 +21,6 @@ Parameters:
     Default: 8080
     Type: Number
     Description: Subnet Name
-  LoadBalancerPort:
-    Default: 80
-    Type: Number
-    Description: Subnet Name
   BastionHostSecurityGroupId:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Bastion Host Security Group

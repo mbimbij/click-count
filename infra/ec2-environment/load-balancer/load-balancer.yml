@@ -19,9 +19,6 @@ Parameters:
     Default: 80
     Type: Number
     Description: Subnet Name
-  Ec2InstanceId:
-    Type: AWS::EC2::Instance::Id
-    Description: Ec2 Instance Id
   LoadBalancerSecurityGroupId:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Load Balancer Security Group
@@ -41,9 +38,6 @@ Resources:
       Protocol: HTTP
       Port: !Ref LoadBalancerPort
       VpcId: !Ref VpcId
-      Targets:
-        - Id: !Ref Ec2InstanceId
-          Port: !Ref ApplicationPort
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -77,3 +71,5 @@ Outputs:
     Value: !GetAtt [LoadBalancer, DNSName]
     Export:
       Name: !Sub '${ApplicationName}::${Environment}::DNSName'
+  TargetGroupArn:
+    Value: !Ref TargetGroup

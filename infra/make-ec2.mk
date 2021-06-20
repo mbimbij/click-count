@@ -45,10 +45,10 @@ ec2-pipeline:
         StagingPrivateSubnetIds=$(STAGING_PRIVATE_SUBNET_IDS) \
         StagingEnvironmentDns=$(STAGING_ENVIRONMENT_DNS) \
         StagingTestRunnerSecurityGroupId=$(STAGING_TEST_RUNNER_SECURITY_GROUP_ID) \
-        ProductionVpcId=$(PRODUCTION_VPC_ID) \
-		ProductionPrivateSubnetIds=$(PRODUCTION_PRIVATE_SUBNET_IDS) \
-		ProductionEnvironmentDns=$(PRODUCTION_ENVIRONMENT_DNS) \
-        ProductionTestRunnerSecurityGroupId=$(PRODUCTION_TEST_RUNNER_SECURITY_GROUP_ID)
+#        ProductionVpcId=$(PRODUCTION_VPC_ID) \
+#		ProductionPrivateSubnetIds=$(PRODUCTION_PRIVATE_SUBNET_IDS) \
+#		ProductionEnvironmentDns=$(PRODUCTION_ENVIRONMENT_DNS) \
+#        ProductionTestRunnerSecurityGroupId=$(PRODUCTION_TEST_RUNNER_SECURITY_GROUP_ID)
 #        TestRunnerSecurityGroupId='sg-001765d4d50ff2df5'
 	rm ec2-environment/pipeline/pipeline-packaged.yml
 

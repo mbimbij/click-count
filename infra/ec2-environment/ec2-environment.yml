@@ -129,6 +129,7 @@ Resources:
           Ref: Environment
         InstanceType:
           Ref: ApplicationInstanceType
+        TargetGroupArn: !GetAtt LoadBalancer.Outputs.TargetGroupArn
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::Ec2Instance'
@@ -157,7 +158,6 @@ Resources:
           Ref: ApplicationName
         Environment:
           Ref: Environment
-        Ec2InstanceId: !GetAtt Ec2Instance.Outputs.InstanceId
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::Ec2Instance'

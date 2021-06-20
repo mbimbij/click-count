@@ -33,7 +33,9 @@ Parameters:
   InstanceType:
     Type: String
     Description: Instance Type
-
+  TargetGroupArn:
+    Type: String
+    Description: Target Group Arn
 Resources:
   Ec2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -57,23 +59,23 @@ Resources:
           FromPort: !Ref ApplicationPort
           ToPort: !Ref ApplicationPort
           SourceSecurityGroupId: !Ref LoadBalancerSecurityGroupId
-  Ec2Instance:
-    Type: AWS::EC2::Instance
-    Properties:
-      ImageId: !Ref AmiId
-      InstanceType: !Ref InstanceType
-      KeyName: !Ref KeyName
-      SecurityGroupIds:
-        - !Ref Ec2SecurityGroup
-      IamInstanceProfile: !Ref Ec2InstanceProfile
-      SubnetId: !Ref SubnetId
-      Tags:
-        - Key: Name
-          Value: !Sub '${ApplicationName}-${Environment}-instance'
-        - Key: Application
-          Value: !Sub '${ApplicationName}'
-        - Key: Environment
-          Value: !Sub '${Environment}'
+#  Ec2Instance:
+#    Type: AWS::EC2::Instance
+#    Properties:
+#      ImageId: !Ref AmiId
+#      InstanceType: !Ref InstanceType
+#      KeyName: !Ref KeyName
+#      SecurityGroupIds:
+#        - !Ref Ec2SecurityGroup
+#      IamInstanceProfile: !Ref Ec2InstanceProfile
+#      SubnetId: !Ref SubnetId
+#      Tags:
+#        - Key: Name
+#          Value: !Sub '${ApplicationName}-${Environment}-instance'
+#        - Key: Application
+#          Value: !Sub '${ApplicationName}'
+#        - Key: Environment
+#          Value: !Sub '${Environment}'
   Ec2InstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties:
@@ -106,14 +108,39 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: !Ref AmiId
+        InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Arn: !GetAtt [ Ec2InstanceProfile, Arn ]
+        SecurityGroupIds:
+          - !Ref Ec2SecurityGroup
+      LaunchTemplateName: !Sub '${ApplicationName}-${Environment}-ec2-launch-template'
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      HealthCheckGracePeriod: 60
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: '1'
+      DesiredCapacity: '2'
+      MaxSize: '3'
+      TargetGroupARNs:
+        - !Ref TargetGroupArn
+      VPCZoneIdentifier:
+        - !Ref SubnetId
 Outputs:
-  InstanceDns:
-    Value: !GetAtt [Ec2Instance, PrivateDnsName]
-    Export:
-      Name: !Sub '${ApplicationName}::${Environment}::InstancePrivateDns'
-  InstanceId:
-    Value: !Ref Ec2Instance
-    Export:
-      Name: !Sub '${ApplicationName}::${Environment}::InstanceId'
+#  InstanceDns:
+#    Value: !GetAtt [Ec2Instance, PrivateDnsName]
+#    Export:
+#      Name: !Sub '${ApplicationName}::${Environment}::InstancePrivateDns'
+#  InstanceId:
+#    Value: !Ref Ec2Instance
+#    Export:
+#      Name: !Sub '${ApplicationName}::${Environment}::InstanceId'
   SecurityGroupId:
     Value: !GetAtt [ Ec2SecurityGroup, GroupId ]

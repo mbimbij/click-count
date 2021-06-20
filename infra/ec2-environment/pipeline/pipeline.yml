@@ -17,24 +17,24 @@ Parameters:
   StagingPrivateSubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Subnet Ids
-  StagingEnvironmentDns:
-    Type: String
-    Description: Staging Environment Dns
-  StagingTestRunnerSecurityGroupId:
-    Type: AWS::EC2::SecurityGroup::Id
-    Description: Staging Test Runner Security Group Id
-  ProductionVpcId:
-    Type: AWS::EC2::VPC::Id
-    Description: ProductionVpcId
-  ProductionPrivateSubnetIds:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: Production Subnet Ids
-  ProductionEnvironmentDns:
-    Type: String
-    Description: Production Environment Dns
-  ProductionTestRunnerSecurityGroupId:
-    Type: AWS::EC2::SecurityGroup::Id
-    Description: Production Test Runner Security Group Id
+#  StagingEnvironmentDns:
+#    Type: String
+#    Description: Staging Environment Dns
+#  StagingTestRunnerSecurityGroupId:
+#    Type: AWS::EC2::SecurityGroup::Id
+#    Description: Staging Test Runner Security Group Id
+#  ProductionVpcId:
+#    Type: AWS::EC2::VPC::Id
+#    Description: ProductionVpcId
+#  ProductionPrivateSubnetIds:
+#    Type: List<AWS::EC2::Subnet::Id>
+#    Description: Production Subnet Ids
+#  ProductionEnvironmentDns:
+#    Type: String
+#    Description: Production Environment Dns
+#  ProductionTestRunnerSecurityGroupId:
+#    Type: AWS::EC2::SecurityGroup::Id
+#    Description: Production Test Runner Security Group Id
 
 Resources:
   GithubConnection:
@@ -115,9 +115,9 @@ Resources:
                 Resource:
                   - !GetAtt [BuildProject, Arn]
                   - !GetAtt CreateStagingRelease.Outputs.CreateReleaseArn
-                  - !GetAtt StagingTest.Outputs.TestRunnerArn
-                  - !GetAtt CreateProductionRelease.Outputs.CreateReleaseArn
-                  - !GetAtt ProductionTest.Outputs.TestRunnerArn
+#                  - !GetAtt StagingTest.Outputs.TestRunnerArn
+#                  - !GetAtt CreateProductionRelease.Outputs.CreateReleaseArn
+#                  - !GetAtt ProductionTest.Outputs.TestRunnerArn
               - Effect: Allow
                 Action:
                   - codedeploy:*
@@ -235,44 +235,44 @@ Resources:
               - Key: Environment
                 Value: production
                 Type: KEY_AND_VALUE
-  StagingTest:
-    Type: "AWS::CloudFormation::Stack"
-    Properties:
-      TemplateURL: 'integration-test-runner/integration-test-runner.yml'
-      Parameters:
-        ApplicationName:
-          Ref: ApplicationName
-        Environment: staging
-        VPCID:
-          Ref: StagingVpcId
-        SubnetIds: !Join [',', !Ref StagingPrivateSubnetIds]
-        S3Bucket:
-          Ref: S3Bucket
-        ApplicationEndpointDnsName:
-          Ref: StagingEnvironmentDns
-        TestRunnerSecurityGroupId: !Ref StagingTestRunnerSecurityGroupId
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}::StagingTestRunner'
-  ProductionTest:
-    Type: "AWS::CloudFormation::Stack"
-    Properties:
-      TemplateURL: 'integration-test-runner/integration-test-runner.yml'
-      Parameters:
-        ApplicationName:
-          Ref: ApplicationName
-        Environment: production
-        VPCID:
-          Ref: ProductionVpcId
-        SubnetIds: !Join [ ',', !Ref ProductionPrivateSubnetIds ]
-        S3Bucket:
-          Ref: S3Bucket
-        ApplicationEndpointDnsName:
-          Ref: ProductionEnvironmentDns
-        TestRunnerSecurityGroupId: !Ref ProductionTestRunnerSecurityGroupId
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}::StagingTestRunner'
+#  StagingTest:
+#    Type: "AWS::CloudFormation::Stack"
+#    Properties:
+#      TemplateURL: 'integration-test-runner/integration-test-runner.yml'
+#      Parameters:
+#        ApplicationName:
+#          Ref: ApplicationName
+#        Environment: staging
+#        VPCID:
+#          Ref: StagingVpcId
+#        SubnetIds: !Join [',', !Ref StagingPrivateSubnetIds]
+#        S3Bucket:
+#          Ref: S3Bucket
+#        ApplicationEndpointDnsName:
+#          Ref: StagingEnvironmentDns
+#        TestRunnerSecurityGroupId: !Ref StagingTestRunnerSecurityGroupId
+#      Tags:
+#        - Key: Name
+#          Value: !Sub '${AWS::StackName}::StagingTestRunner'
+#  ProductionTest:
+#    Type: "AWS::CloudFormation::Stack"
+#    Properties:
+#      TemplateURL: 'integration-test-runner/integration-test-runner.yml'
+#      Parameters:
+#        ApplicationName:
+#          Ref: ApplicationName
+#        Environment: production
+#        VPCID:
+#          Ref: ProductionVpcId
+#        SubnetIds: !Join [ ',', !Ref ProductionPrivateSubnetIds ]
+#        S3Bucket:
+#          Ref: S3Bucket
+#        ApplicationEndpointDnsName:
+#          Ref: ProductionEnvironmentDns
+#        TestRunnerSecurityGroupId: !Ref ProductionTestRunnerSecurityGroupId
+#      Tags:
+#        - Key: Name
+#          Value: !Sub '${AWS::StackName}::StagingTestRunner'
   CreateStagingRelease:
     Type: "AWS::CloudFormation::Stack"
     Properties:
@@ -285,18 +285,18 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}::CreateStagingRelease'
-  CreateProductionRelease:
-    Type: "AWS::CloudFormation::Stack"
-    Properties:
-      TemplateURL: 'create-release/create-release.yml'
-      Parameters:
-        ApplicationName: !Sub '${ApplicationName}'
-        Environment: production
-        S3Bucket:
-          Ref: S3Bucket
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}::CreateStagingRelease'
+#  CreateProductionRelease:
+#    Type: "AWS::CloudFormation::Stack"
+#    Properties:
+#      TemplateURL: 'create-release/create-release.yml'
+#      Parameters:
+#        ApplicationName: !Sub '${ApplicationName}'
+#        Environment: production
+#        S3Bucket:
+#          Ref: S3Bucket
+#      Tags:
+#        - Key: Name
+#          Value: !Sub '${AWS::StackName}::CreateStagingRelease'
   Pipeline:
     Description: Creating a deployment pipeline for !Ref ApplicationName project in AWS CodePipeline
     Type: 'AWS::CodePipeline::Pipeline'
@@ -367,63 +367,63 @@ Resources:
                   Ref: CodeDeployApplication
                 DeploymentGroupName:
                   Ref: StagingDeploymentGroup
-            - Name: Test
-              RunOrder: 3
-              InputArtifacts:
-                - Name: SourceOutput
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Version: 1
-                Provider: CodeBuild
-              Configuration:
-                ProjectName: !GetAtt StagingTest.Outputs.TestRunnerName
-        - Name: Production
-          Actions:
-            - Name: ApproveDeployProd
-              RunOrder: 1
-              ActionTypeId:
-                Category: Approval
-                Owner: AWS
-                Version: 1
-                Provider: Manual
-              Configuration:
-                CustomData: "Perform all necessary manual tests and verifications on \"staging\" environment before approving."
-            - Name: CreateRelease
-              RunOrder: 2
-              InputArtifacts:
-                - Name: BuildOutput
-              OutputArtifacts:
-                - Name: ProductionRelease
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Version: 1
-                Provider: CodeBuild
-              Configuration:
-                ProjectName: !GetAtt CreateProductionRelease.Outputs.CreateReleaseName
-            - Name: Deploy
-              RunOrder: 3
-              InputArtifacts:
-                - Name: ProductionRelease
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Version: 1
-                Provider: CodeDeploy
-              Configuration:
-                ApplicationName:
-                  Ref: CodeDeployApplication
-                DeploymentGroupName:
-                  Ref: ProductionDeploymentGroup
-            - Name: Test
-              RunOrder: 4
-              InputArtifacts:
-                - Name: SourceOutput
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Version: 1
-                Provider: CodeBuild
-              Configuration:
-                ProjectName: !GetAtt ProductionTest.Outputs.TestRunnerName
+#            - Name: Test
+#              RunOrder: 3
+#              InputArtifacts:
+#                - Name: SourceOutput
+#              ActionTypeId:
+#                Category: Build
+#                Owner: AWS
+#                Version: 1
+#                Provider: CodeBuild
+#              Configuration:
+#                ProjectName: !GetAtt StagingTest.Outputs.TestRunnerName
+#        - Name: Production
+#          Actions:
+#            - Name: ApproveDeployProd
+#              RunOrder: 1
+#              ActionTypeId:
+#                Category: Approval
+#                Owner: AWS
+#                Version: 1
+#                Provider: Manual
+#              Configuration:
+#                CustomData: "Perform all necessary manual tests and verifications on \"staging\" environment before approving."
+#            - Name: CreateRelease
+#              RunOrder: 2
+#              InputArtifacts:
+#                - Name: BuildOutput
+#              OutputArtifacts:
+#                - Name: ProductionRelease
+#              ActionTypeId:
+#                Category: Build
+#                Owner: AWS
+#                Version: 1
+#                Provider: CodeBuild
+#              Configuration:
+#                ProjectName: !GetAtt CreateProductionRelease.Outputs.CreateReleaseName
+#            - Name: Deploy
+#              RunOrder: 3
+#              InputArtifacts:
+#                - Name: ProductionRelease
+#              ActionTypeId:
+#                Category: Deploy
+#                Owner: AWS
+#                Version: 1
+#                Provider: CodeDeploy
+#              Configuration:
+#                ApplicationName:
+#                  Ref: CodeDeployApplication
+#                DeploymentGroupName:
+#                  Ref: ProductionDeploymentGroup
+#            - Name: Test
+#              RunOrder: 4
+#              InputArtifacts:
+#                - Name: SourceOutput
+#              ActionTypeId:
+#                Category: Build
+#                Owner: AWS
+#                Version: 1
+#                Provider: CodeBuild
+#              Configuration:
+#                ProjectName: !GetAtt ProductionTest.Outputs.TestRunnerName

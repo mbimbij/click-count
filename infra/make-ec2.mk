@@ -32,6 +32,7 @@ ec2-pipeline:
 	$(eval PRODUCTION_PRIVATE_SUBNET_IDS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::production::network::PrivateSubnets'].Value" --output text))
 	$(eval PRODUCTION_ENVIRONMENT_DNS := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::production::InstancePrivateDns'].Value" --output text))
 	$(eval PRODUCTION_TEST_RUNNER_SECURITY_GROUP_ID := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::production::TestRunnerSecurityGroupId'].Value" --output text))
+	$(eval STAGING_AUTO_SCALING_GROUP_NAME := $(shell aws cloudformation list-exports --region $(AWS_REGION) --query "Exports[?Name=='$(APPLICATION_NAME)::staging::AutoScalingGroupName'].Value" --output text))
 	aws cloudformation deploy    \
 	  --stack-name $(PIPELINE_STACK_NAME)   \
 	  --template-file ec2-environment/pipeline/pipeline-packaged.yml    \
@@ -45,12 +46,12 @@ ec2-pipeline:
         StagingPrivateSubnetIds=$(STAGING_PRIVATE_SUBNET_IDS) \
         StagingEnvironmentDns=$(STAGING_ENVIRONMENT_DNS) \
         StagingTestRunnerSecurityGroupId=$(STAGING_TEST_RUNNER_SECURITY_GROUP_ID) \
+        StagingAutoScalingGroupName=$(STAGING_AUTO_SCALING_GROUP_NAME)
 #        ProductionVpcId=$(PRODUCTION_VPC_ID) \
 #		ProductionPrivateSubnetIds=$(PRODUCTION_PRIVATE_SUBNET_IDS) \
 #		ProductionEnvironmentDns=$(PRODUCTION_ENVIRONMENT_DNS) \
 #        ProductionTestRunnerSecurityGroupId=$(PRODUCTION_TEST_RUNNER_SECURITY_GROUP_ID)
 #        TestRunnerSecurityGroupId='sg-001765d4d50ff2df5'
-	rm ec2-environment/pipeline/pipeline-packaged.yml
 
 delete-ec2-all:
 	$(MAKE) delete-ec2-pipeline

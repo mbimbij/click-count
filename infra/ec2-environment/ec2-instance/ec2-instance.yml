@@ -144,3 +144,7 @@ Outputs:
 #      Name: !Sub '${ApplicationName}::${Environment}::InstanceId'
   SecurityGroupId:
     Value: !GetAtt [ Ec2SecurityGroup, GroupId ]
+  AutoScalingGroupName:
+    Value: !Ref AutoScalingGroup
+    Export:
+      Name: !Sub '${ApplicationName}::${Environment}::AutoScalingGroupName'

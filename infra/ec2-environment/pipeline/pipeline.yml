@@ -17,6 +17,12 @@ Parameters:
   StagingPrivateSubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Subnet Ids
+  StagingAutoScalingGroupName:
+    Type: String
+    Description: Staging Auto-Scaling Group Name
+#  StagingAutoScalingGroupName:
+#    Type: String
+#    Description: Staging Auto-Scaling Group Name
 #  StagingEnvironmentDns:
 #    Type: String
 #    Description: Staging Environment Dns
@@ -35,7 +41,6 @@ Parameters:
 #  ProductionTestRunnerSecurityGroupId:
 #    Type: AWS::EC2::SecurityGroup::Id
 #    Description: Production Test Runner Security Group Id
-
 Resources:
   GithubConnection:
     Type: AWS::CodeStarConnections::Connection
@@ -206,35 +211,30 @@ Resources:
         - Arn
       DeploymentGroupName: !Sub '${ApplicationName}-staging-deployment-group'
       DeploymentConfigName: CodeDeployDefault.OneAtATime
-      Ec2TagSet:
-        Ec2TagSetList:
-          - Ec2TagGroup:
-              - Key: Application
-                Value: !Ref ApplicationName
-                Type: KEY_AND_VALUE
-          - Ec2TagGroup:
-              - Key: Environment
-                Value: staging
-                Type: KEY_AND_VALUE
-  ProductionDeploymentGroup:
-    Type: AWS::CodeDeploy::DeploymentGroup
-    Properties:
-      ApplicationName: !Ref CodeDeployApplication
-      ServiceRoleArn: !GetAtt
-        - CodeDeployRole
-        - Arn
-      DeploymentGroupName: !Sub '${ApplicationName}-staging-production-group'
-      DeploymentConfigName: CodeDeployDefault.OneAtATime
-      Ec2TagSet:
-        Ec2TagSetList:
-          - Ec2TagGroup:
-              - Key: Application
-                Value: !Ref ApplicationName
-                Type: KEY_AND_VALUE
-          - Ec2TagGroup:
-              - Key: Environment
-                Value: production
-                Type: KEY_AND_VALUE
+      AutoScalingGroups:
+        - !Ref StagingAutoScalingGroupName
+      DeploymentStyle:
+        DeploymentType: IN_PLACE
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+#  ProductionDeploymentGroup:
+#    Type: AWS::CodeDeploy::DeploymentGroup
+#    Properties:
+#      ApplicationName: !Ref CodeDeployApplication
+#      ServiceRoleArn: !GetAtt
+#        - CodeDeployRole
+#        - Arn
+#      DeploymentGroupName: !Sub '${ApplicationName}-staging-production-group'
+#      DeploymentConfigName: CodeDeployDefault.OneAtATime
+#      Ec2TagSet:
+#        Ec2TagSetList:
+#          - Ec2TagGroup:
+#              - Key: Application
+#                Value: !Ref ApplicationName
+#                Type: KEY_AND_VALUE
+#          - Ec2TagGroup:
+#              - Key: Environment
+#                Value: production
+#                Type: KEY_AND_VALUE
 #  StagingTest:
 #    Type: "AWS::CloudFormation::Stack"
 #    Properties:

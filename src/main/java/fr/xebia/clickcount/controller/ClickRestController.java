@@ -32,7 +32,7 @@ public class ClickRestController {
   public String healthcheck() {
     String result = iCheckDataStoreHealth.checkDataStoreHealth();
     if ("PONG".equals(result)) {
-      return "ok";
+      return "ok 2";
     }
     return "ko : " + result;
   }

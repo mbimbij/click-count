@@ -59,23 +59,6 @@ Resources:
           FromPort: !Ref ApplicationPort
           ToPort: !Ref ApplicationPort
           SourceSecurityGroupId: !Ref LoadBalancerSecurityGroupId
-#  Ec2Instance:
-#    Type: AWS::EC2::Instance
-#    Properties:
-#      ImageId: !Ref AmiId
-#      InstanceType: !Ref InstanceType
-#      KeyName: !Ref KeyName
-#      SecurityGroupIds:
-#        - !Ref Ec2SecurityGroup
-#      IamInstanceProfile: !Ref Ec2InstanceProfile
-#      SubnetId: !Ref SubnetId
-#      Tags:
-#        - Key: Name
-#          Value: !Sub '${ApplicationName}-${Environment}-instance'
-#        - Key: Application
-#          Value: !Sub '${ApplicationName}'
-#        - Key: Environment
-#          Value: !Sub '${Environment}'
   Ec2InstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties:

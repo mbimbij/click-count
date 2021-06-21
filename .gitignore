@@ -1,7 +1,7 @@
 .idea/
 target/
 *.iml
-*processed.json
+**/*processed.json
 **/*processed.yml
 **/*packaged.json
 **/*packaged.yml

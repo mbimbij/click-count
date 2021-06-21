@@ -29,9 +29,9 @@ Resources:
       Name: !Sub '${ApplicationName}-${Environment}-tg2'
       HealthCheckEnabled: true
       HealthCheckPort: !Ref ApplicationPort
-      HealthCheckIntervalSeconds: 15
+      HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
+      HealthyThresholdCount: 5
       UnhealthyThresholdCount: 2
       HealthCheckPath: "/actuator/health"
       TargetType: instance
@@ -51,14 +51,6 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
-#        - Type: "redirect"
-#          RedirectConfig:
-#            Protocol: "HTTP"
-#            Port: !Ref ApplicationPort
-#            Host: "#{host}"
-#            Path: "/#{path}"
-#            Query: "#{query}"
-#            StatusCode: "HTTP_301"
         - Type: "forward"
           ForwardConfig:
             TargetGroups:

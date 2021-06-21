@@ -20,6 +20,9 @@ Parameters:
   StagingAutoScalingGroupName:
     Type: String
     Description: Staging Auto-Scaling Group Name
+  TargetGroupName:
+    Type: String
+    Description: Target Group Name
 #  StagingAutoScalingGroupName:
 #    Type: String
 #    Description: Staging Auto-Scaling Group Name
@@ -216,6 +219,9 @@ Resources:
       DeploymentStyle:
         DeploymentType: IN_PLACE
         DeploymentOption: WITH_TRAFFIC_CONTROL
+      LoadBalancerInfo:
+        TargetGroupInfoList:
+          - Name: !GetAtt MyTargetGroup.TargetGroupName
 #  ProductionDeploymentGroup:
 #    Type: AWS::CodeDeploy::DeploymentGroup
 #    Properties:
